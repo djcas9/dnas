@@ -2,7 +2,7 @@
 [![Build Status](https://drone.io/github.com/mephux/dnas/status.png)](https://drone.io/github.com/mephux/dnas/latest)
 
 Eventually this will actually do something besides logging DNS questions and Answers. 
-The hope is to record the data and build metrics on usage and to search.
+The hope is to record the data and build metrics on usage and for searching. i.e malware blah.exe sent data to blah.org what ips did that resolve to at that time.
 
 ## Install
 
