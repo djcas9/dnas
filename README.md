@@ -27,7 +27,7 @@ The hope is to record the data and build metrics on usage and to search.
 
   `Example: sudo dnas -i en0 -u mephux`
 
-  ![dnas](https://github.com/mephux/dnas/raw/master/screenshot/dnas-output.png)
+  ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/screenshot/dnsa-output.png)
 
 
 ## JSON Output
