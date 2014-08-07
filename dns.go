@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/growse/pcap"
 	"github.com/miekg/dns"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -38,7 +39,7 @@ type Message struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func DNS(pkt *pcap.Packet) (*Message, error) {
+func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 	message := &Message{}
 
 	message.Timestamp = time.Now()
@@ -61,13 +62,10 @@ func DNS(pkt *pcap.Packet) (*Message, error) {
 
 		switch ip4hdr.Protocol {
 		case IP_ICMP:
-			// protohdr := pkt.Headers[1].(*pcap.Icmphdr)
 			message.Protocol = "TCMP"
 		case IP_TCP:
-			// protohdr := pkt.Headers[1].(*pcap.Tcphdr)
 			message.Protocol = "TCP"
 		case IP_UDP:
-			// protohdr := pkt.Headers[1].(*pcap.Udphdr)
 			message.Protocol = "UDP"
 		default:
 			message.Protocol = "N/A"
@@ -84,13 +82,20 @@ func DNS(pkt *pcap.Packet) (*Message, error) {
 		fmt.Println(ip6hdr)
 	}
 
-	// fmt.Println(pkt, msg, ggerr)
-
-	// fmt.Println(msg.Ns)
-	// fmt.Println(len(msg.Answer))
-
 	for i := range msg.Question {
 		message.Dns.Question = msg.Question[i].Name
+	}
+
+	if filter != "" {
+		r, _ := regexp.Compile(filter)
+
+		in := []byte(message.Dns.Question)
+		match := r.Match([]byte(in))
+
+		if match {
+		} else {
+			return message, fmt.Errorf("Error: Question did not match filter.")
+		}
 	}
 
 	for i := range msg.Answer {

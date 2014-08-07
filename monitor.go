@@ -10,6 +10,29 @@ var (
 	snaplen = 65536
 )
 
+func OpenFile(path string) *os.File {
+	var fo *os.File
+	var ferr error
+
+	if _, err := os.Stat(path); err == nil {
+		fo, ferr = os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0660)
+	} else {
+		fo, ferr = os.Create(path)
+	}
+
+	if ferr != nil {
+		panic(ferr)
+	}
+
+	return fo
+}
+
+func WriteToFile(fo *os.File, json []byte) {
+	if _, err := fo.WriteString(string(json) + "\n"); err != nil {
+		panic(err)
+	}
+}
+
 func Monitor(options *Options) {
 
 	// hostname, err := os.Hostname()
@@ -30,23 +53,41 @@ func Monitor(options *Options) {
 		os.Exit(-1)
 	}
 
+	var file *os.File
+
+	if options.Write != "" {
+		file = OpenFile(options.Write)
+
+		defer func() {
+			if err := file.Close(); err != nil {
+				panic(err)
+			}
+		}()
+	}
+
+	if options.User != "" {
+		chuser(options.User)
+	}
+
 	for pkt, r := h.NextEx(); r >= 0; pkt, r = h.NextEx() {
 
 		if r == 0 {
-			// timeout, continue
 			continue
 		}
 
-		message, err := DNS(pkt)
+		message, err := DNS(pkt, options.Filter)
 
 		if err == nil {
-			json, err := message.ToJSON()
 
-			if err != nil {
-				panic(err)
+			if options.Write != "" {
+				json, err := message.ToJSON()
+
+				if err != nil {
+					panic(err)
+				}
+
+				WriteToFile(file, json)
 			}
-
-			fmt.Println(string(json))
 
 			message.ToStdout()
 		}

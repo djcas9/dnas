@@ -1,6 +1,7 @@
 package main
 
 func main() {
-	options := CLIRun()
-	Monitor(options)
+	CLIRun(func(options *Options) {
+		Monitor(options)
+	})
 }
