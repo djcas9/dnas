@@ -2,6 +2,7 @@
 
 ## Usage
 
+```
   DNAS (0.1.0) - Domain Name Analytics System
 
   Usage: dnas [options]
@@ -17,3 +18,4 @@
 
   Help Options:
     -h, --help              Show this help message
+```
