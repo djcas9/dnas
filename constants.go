@@ -1,4 +1,4 @@
-package dnas
+package main
 
 const (
 	NAME          = "DNAS"
