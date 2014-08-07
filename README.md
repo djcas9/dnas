@@ -3,6 +3,12 @@
 Eventually this will actually do something besides logging DNS questions and Answers. 
 The hope is to record the data and build metrics on usage and to search.
 
+## Install
+
+  `go get github.com/mephux/dnas`
+
+  then just run `dnas` if `$GOPATH/bin` is in your path.
+
 ## Usage
 
 ```

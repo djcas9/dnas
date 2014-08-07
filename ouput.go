@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	_ "github.com/wsxiaoys/terminal"
-	_ "github.com/wsxiaoys/terminal/color"
 	"os"
 	"text/tabwriter"
 )
