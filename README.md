@@ -1,4 +1,5 @@
 # DNAS - Domain Name Analytics System
+[![Build Status](https://drone.io/github.com/mephux/dnas/status.png)](https://drone.io/github.com/mephux/dnas/latest)
 
 Eventually this will actually do something besides logging DNS questions and Answers. 
 The hope is to record the data and build metrics on usage and to search.
