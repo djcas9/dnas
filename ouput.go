@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	lvl "github.com/syndtr/goleveldb/leveldb"
 	"os"
 	"text/tabwriter"
 )
@@ -12,6 +15,47 @@ var (
 	w     = new(tabwriter.Writer)
 	count = 0
 )
+
+func MakeDB(path string) (db *lvl.DB, err error) {
+	db, err = lvl.OpenFile(path, nil)
+
+	return db, err
+}
+
+func (message *Message) ToLevelDB(db *lvl.DB, options *Options) (err error) {
+	data, err := db.Get([]byte(message.Dns.Question), nil)
+	var buf bytes.Buffer
+
+	if err != nil {
+		enc := gob.NewEncoder(&buf)
+		eerr := enc.Encode(message.Dns.Answers)
+
+		if eerr != nil {
+			return eerr
+		}
+
+		err = db.Put([]byte(message.Dns.Question), buf.Bytes(), nil)
+
+		return err
+	}
+
+	var a []Answer
+	enc := gob.NewDecoder(bytes.NewReader(data))
+	eerr := enc.Decode(&a)
+
+	if eerr != nil {
+		return eerr
+	}
+
+	for i, aa := range message.Dns.Answers {
+		fmt.Println(i, aa)
+
+	}
+
+	fmt.Println("GOT DATA!@#!@#!@#!@#!@#!@#:::::::::::::::", a[0].Data, len(a))
+
+	return nil
+}
 
 func (message *Message) ToStdout(options *Options) {
 	w.Init(os.Stdout, 1, 2, 2, ' ', 0)

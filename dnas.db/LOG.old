@@ -1,0 +1,8 @@
+=============== Aug 17, 2014 (EDT) ===============
+17:09:53.009656 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock D·DeletedEntry L·Level Q·SeqNum T·TimeElapsed
+17:09:53.012142 db@open opening
+17:09:53.012228 journal@recovery F·1
+17:09:53.012845 journal@recovery recovering @10
+17:09:53.013500 mem@flush created L0@12 N·6 S·912B "a...,v44":"t...,v45"
+17:09:53.014789 db@janitor F·5 G·0
+17:09:53.014808 db@open done T·2.655153ms

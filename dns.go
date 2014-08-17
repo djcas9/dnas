@@ -21,11 +21,14 @@ const (
 )
 
 type Answer struct {
-	Class  string `json:"class"`
-	Name   string `json:"name"`
-	Record string `json:"record"`
-	Data   string `json:"data"`
-	TTL    string `json:"ttl"`
+	Class     string    `json:"class"`
+	Name      string    `json:"name"`
+	Record    string    `json:"record"`
+	Data      string    `json:"data"`
+	TTL       string    `json:"ttl"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Active    bool      `json:"active"`
 }
 
 type Message struct {
@@ -109,11 +112,14 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 	for i := range msg.Answer {
 		split := strings.Split(msg.Answer[i].String(), "\t")
 		answer := Answer{
-			Name:   split[0],
-			TTL:    split[1],
-			Class:  split[2],
-			Record: split[3],
-			Data:   split[4],
+			Name:      split[0],
+			TTL:       split[1],
+			Class:     split[2],
+			Record:    split[3],
+			Data:      split[4],
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Active:    true,
 		}
 		message.Dns.Answers = append(message.Dns.Answers, answer)
 	}

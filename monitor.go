@@ -53,6 +53,12 @@ func Monitor(options *Options) {
 		os.Exit(-1)
 	}
 
+	db, dberr := MakeDB(options.Database)
+
+	if dberr != nil {
+		panic(dberr)
+	}
+
 	var file *os.File
 
 	if options.Write != "" {
@@ -87,6 +93,11 @@ func Monitor(options *Options) {
 				}
 
 				WriteToFile(file, json)
+			}
+
+			lvlerr := message.ToLevelDB(db, options)
+			if lvlerr != nil {
+				// panic(lvlerr)
 			}
 
 			message.ToStdout(options)

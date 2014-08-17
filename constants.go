@@ -5,4 +5,5 @@ const (
 	DESCRIPTION   = "Domain Name Analytics System"
 	DATABASE_PATH = ".dnas/dnas.db"
 	VERSION       = "0.1.0"
+	DATABASE      = "dnas.db"
 )

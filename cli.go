@@ -41,8 +41,9 @@ func chuser(username string) (uid, gid int) {
 type Options struct {
 	Interface string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
 	Port      int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
+	Database  string `short:"d" long:"database" description:"Database file path" default:"./dnas.db"`
 	Filter    string `short:"f" long:"filter" description:"Filter by question" default:"" value-name:"*.com"`
-	Daemon    bool   `short:"d" long:"daemon" description:"Run DNAS in daemon mode"`
+	Daemon    bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
 	Write     string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
 	User      string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
 	Hexdump   bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
@@ -86,6 +87,10 @@ func CLIRun(f func(options *Options)) {
 
 	if options.Interface == "" {
 		Usage(parser)
+	}
+
+	if options.Database == "" {
+		options.Database = DATABASE
 	}
 
 	if options.Daemon {
