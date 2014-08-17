@@ -73,7 +73,7 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 
 		switch ip4hdr.Protocol {
 		case IP_ICMP:
-			message.Protocol = "TCMP"
+			message.Protocol = "ICMP"
 		case IP_TCP:
 			message.Protocol = "TCP"
 		case IP_UDP:
