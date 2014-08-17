@@ -42,7 +42,7 @@ The hope is to record the data and build metrics on usage and for searching. i.e
   `Example: sudo dnas -i en0 -u mephuxi -w output.txt`
 
   ```json
-  {"dns":{"answers":[{"class":"IN","name":"api.twitter.com.","record":"A","data":"199.16.156.8","ttl":"19"},{"class":"IN","name":"api.twitter.com.","record":"A","data":"199.16.156.199","ttl":"19"},{"class":"IN","name":"api.twitter.com.","record":"A","data":"199.16.156.231","ttl":"19"},{"class":"IN","name":"api.twitter.com.","record":"A","data":"199.16.156.72","ttl":"19"}],"question":"api.twitter.com."},"dstip":"172.16.1.19","protocol":"UDP","srcip":"172.16.1.1","timestamp":"2014-08-07T16:23:16.343281497-04:00"}
+  {"dns":{"answers":[{"class":"IN","name":"avatars2.githubusercontent.com.","record":"CNAME","data":"github.map.fastly.net.","ttl":"1099","created_at":"2014-08-17T17:10:38.194959151-04:00","updated_at":"2014-08-17T17:10:38.194959229-04:00","active":true},{"class":"IN","name":"github.map.fastly.net.","record":"A","data":"199.27.76.133","ttl":"4","created_at":"2014-08-17T17:10:38.194963092-04:00","updated_at":"2014-08-17T17:10:38.194963118-04:00","active":true}],"question":"avatars2.githubusercontent.com.","length":150},"dstip":"172.16.1.19","protocol":"UDP","srcip":"172.16.1.1","timestamp":"2014-08-17T17:10:38.19486575-04:00","packet":"i4WBgAABAAIAAAAACGF2YXRhcnMyEWdpdGh1YnVzZXJjb250ZW50A2NvbQAAAQABCGF2YXRhcnMyEWdpdGh1YnVzZXJjb250ZW50A2NvbQAABQABAAAESwAXBmdpdGh1YgNtYXAGZmFzdGx5A25ldAAGZ2l0aHViA21hcAZmYXN0bHkDbmV0AAABAAEAAAAEAATHG0yF"}
   ```
 
 ## Self-Promotion
