@@ -55,6 +55,8 @@ func Monitor(options *Options) {
 
 	db, dberr := MakeDB(options.Database)
 
+	fmt.Println(options.Database)
+
 	if dberr != nil {
 		panic(dberr)
 	}
