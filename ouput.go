@@ -47,12 +47,12 @@ func (message *Message) ToLevelDB(db *lvl.DB, options *Options) (err error) {
 		return eerr
 	}
 
-	for i, aa := range message.Dns.Answers {
-		fmt.Println(i, aa)
+	// for i, aa := range message.Dns.Answers {
+	// fmt.Println(i, aa)
 
-	}
+	// }
 
-	fmt.Println("GOT DATA!@#!@#!@#!@#!@#!@#:::::::::::::::", a[0].Data, len(a))
+	// fmt.Println("GOT DATA!@#!@#!@#!@#!@#!@#:::::::::::::::", a[0].Data, len(a))
 
 	return nil
 }
