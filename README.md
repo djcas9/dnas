@@ -13,8 +13,11 @@ The hope is to record the data and build metrics on usage and for searching. i.e
   -- OR --
 
   `git clone git@github.com:mephux/dnas.git`
+
   `cd dnas/`
+
   `go build`
+
 
 ## Usage
 
