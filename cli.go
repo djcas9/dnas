@@ -45,6 +45,7 @@ type Options struct {
 	Daemon    bool   `short:"d" long:"daemon" description:"Run DNAS in daemon mode"`
 	Write     string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
 	User      string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
+	Hexdump   bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
 	Version   bool   `short:"v" long:"version" description:"Show version information"`
 }
 

@@ -32,11 +32,13 @@ type Message struct {
 	Dns struct {
 		Answers  []Answer `json:"answers"`
 		Question string   `json:"question"`
+		Length   int      `json:"length"`
 	} `json:"dns"`
 	DstIp     string    `json:"dstip"`
 	Protocol  string    `json:"protocol"`
 	SrcIp     string    `json:"srcip"`
 	Timestamp time.Time `json:"timestamp"`
+	Packet    []byte    `json:"packet"`
 }
 
 func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
@@ -55,6 +57,12 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 	if len(pkt.Headers) <= 0 {
 		return message, fmt.Errorf("Error: Missing header information.")
 	}
+
+	message.Dns.Length = msg.Len()
+
+	packet, _ := msg.Pack()
+
+	message.Packet = packet
 
 	ip4hdr, ip4ok := pkt.Headers[0].(*pcap.Iphdr)
 

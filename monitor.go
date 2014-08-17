@@ -89,7 +89,7 @@ func Monitor(options *Options) {
 				WriteToFile(file, json)
 			}
 
-			message.ToStdout()
+			message.ToStdout(options)
 		}
 
 	}

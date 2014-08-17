@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,29 +13,19 @@ var (
 	count = 0
 )
 
-type OutputJSON struct {
-	Dns struct {
-		Answers   []struct{} `json:"answers"`
-		Questions []struct{} `json:"questions"`
-	} `json:"dns"`
-	Dstip          string   `json:"dstip"`
-	IpHeader       struct{} `json:"ip_header"`
-	ProtocolHeader struct{} `json:"protocol_header"`
-	Srcip          string   `json:"srcip"`
-	Timestamp      string   `json:"timestamp"`
-}
-
-func (message *Message) ToStdout() {
+func (message *Message) ToStdout(options *Options) {
 	w.Init(os.Stdout, 1, 2, 2, ' ', 0)
 
 	count++
+
 	fmt.Fprintf(w, "\t---\t%d\t---\n", count)
 	fmt.Fprintf(w, "\n")
 
 	fmt.Fprintf(w, "\tQuestion:\t\033[0;31;49m%s\033[0m\n", message.Dns.Question)
 	fmt.Fprintf(w, "\tTimestamp:\t%s\n", message.Timestamp)
 	fmt.Fprintf(w, "\tSource:\t%s\n", message.SrcIp)
-	fmt.Fprintf(w, "\tDestination:\t%s\n\n", message.DstIp)
+	fmt.Fprintf(w, "\tDestination:\t%s\n", message.DstIp)
+	fmt.Fprintf(w, "\tLength:\t%d\n\n", message.Dns.Length)
 
 	fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\t\n\n", len(message.Dns.Answers))
 
@@ -45,6 +36,10 @@ func (message *Message) ToStdout() {
 		fmt.Fprintf(w, "\t%s", message.Dns.Answers[i].Record)
 		fmt.Fprintf(w, "\t%s", message.Dns.Answers[i].Name)
 		fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m\n", message.Dns.Answers[i].Data)
+	}
+
+	if options.Hexdump {
+		fmt.Fprintf(w, "\n\t\033[0;32;49mHexdump:\033[0m\n\n%s\n", hex.Dump(message.Packet))
 	}
 
 	fmt.Fprintf(w, "\n")
