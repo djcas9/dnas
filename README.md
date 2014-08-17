@@ -20,10 +20,12 @@ The hope is to record the data and build metrics on usage and for searching. i.e
   Options:
     -i, --interface=eth0    Interface to monitor
     -p, --port=53           DNS port (53)
+    -d, --database=         Database file path
     -f, --filter=*.com      Filter by question
-    -d, --daemon            Run DNAS in daemon mode
+    -D, --daemon            Run DNAS in daemon mode
     -w, --write=FILE        Write JSON output to log file
     -u, --user=USER         Drop privileges to this user
+    -H, --hexdump           Show hexdump of DNS packet
     -v, --version           Show version information
 
   Help Options:
