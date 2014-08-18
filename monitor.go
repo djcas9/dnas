@@ -35,7 +35,15 @@ func WriteToFile(fo *os.File, json []byte) {
 
 func Monitor(options *Options) {
 
-	// hostname, err := os.Hostname()
+	fmt.Printf("\n %s (%s) - %s\n",
+		NAME,
+		VERSION,
+		DESCRIPTION,
+	)
+
+	hostname, _ := os.Hostname()
+
+	fmt.Printf(" Host: %s\n\n", hostname)
 
 	expr := fmt.Sprintf("port %d", options.Port)
 
@@ -55,7 +63,7 @@ func Monitor(options *Options) {
 
 	db, dberr := MakeDB(options.Database)
 
-	fmt.Println(options.Database)
+	defer db.Close()
 
 	if dberr != nil {
 		panic(dberr)
@@ -88,19 +96,24 @@ func Monitor(options *Options) {
 		if err == nil {
 
 			if options.Write != "" {
-				json, err := message.ToJSON()
+				go func() {
+					json, err := message.ToJSON()
 
-				if err != nil {
-					panic(err)
+					if err != nil {
+						panic(err)
+					}
+
+					WriteToFile(file, json)
+				}()
+			}
+
+			go func() {
+				lvlerr := message.ToLevelDB(db, options)
+
+				if lvlerr != nil {
+					// panic(lvlerr)
 				}
-
-				WriteToFile(file, json)
-			}
-
-			lvlerr := message.ToLevelDB(db, options)
-			if lvlerr != nil {
-				// panic(lvlerr)
-			}
+			}()
 
 			message.ToStdout(options)
 		}

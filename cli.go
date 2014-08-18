@@ -41,12 +41,14 @@ func chuser(username string) (uid, gid int) {
 type Options struct {
 	Interface string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
 	Port      int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
-	Database  string `short:"d" long:"database" description:"Database file path"`
-	Filter    string `short:"f" long:"filter" description:"Filter by question" default:"" value-name:"*.com"`
+	Database  string `short:"d" long:"database" description:"Database file path" value-name:"FILE"`
+	Filter    string `short:"F" long:"filter" description:"Filter by question" default:"" value-name:"*.com"`
 	Daemon    bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
 	Write     string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
 	User      string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
 	Hexdump   bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
+	Find      string `short:"f" long:"find" description:"Search for DNS record by question" value-name:"STRING"`
+	List      bool   `short:"l" long:"list" description:"List all seen DNS questions"`
 	Version   bool   `short:"v" long:"version" description:"Show version information"`
 }
 
@@ -56,6 +58,7 @@ func Usage(p *flags.Parser) {
 		VERSION,
 		DESCRIPTION,
 	)
+
 	p.WriteHelp(os.Stdout)
 	fmt.Printf("\n")
 	os.Exit(1)
@@ -85,46 +88,56 @@ func CLIRun(f func(options *Options)) {
 		Version()
 	}
 
-	if options.Interface == "" {
-		Usage(parser)
-	}
-
 	if options.Database == "" {
 		options.Database = DATABASE
 	}
 
-	if options.Daemon {
+	if options.Find != "" || options.List {
 
-		cntxt := &daemon.Context{
-			PidFileName: "dnas.pid",
-			PidFilePerm: 0644,
-			LogFileName: "dnas.log",
-			LogFilePerm: 0640,
-			WorkDir:     "./",
-			Umask:       027,
+		if options.List {
+			ListAllQuestions(options.Database)
+		} else {
+			FindKeyBy(options.Database, options.Find)
 		}
 
-		d, err := cntxt.Reborn()
-
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		if d != nil {
-			return
-		}
-
-		defer cntxt.Release()
-
-		go f(options)
-
-		err = daemon.ServeSignals()
-
-		if err != nil {
-			log.Println("Error:", err)
-		}
 	} else {
-		f(options)
-	}
 
+		if options.Interface == "" {
+			Usage(parser)
+		}
+
+		if options.Daemon {
+
+			cntxt := &daemon.Context{
+				PidFileName: "dnas.pid",
+				PidFilePerm: 0644,
+				LogFileName: "dnas.log",
+				LogFilePerm: 0640,
+				WorkDir:     "./",
+				Umask:       027,
+			}
+
+			d, err := cntxt.Reborn()
+
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			if d != nil {
+				return
+			}
+
+			defer cntxt.Release()
+
+			go f(options)
+
+			err = daemon.ServeSignals()
+
+			if err != nil {
+				log.Println("Error:", err)
+			}
+		} else {
+			f(options)
+		}
+	}
 }
