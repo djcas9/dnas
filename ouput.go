@@ -6,108 +6,169 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	lvl "github.com/syndtr/goleveldb/leveldb"
+	"github.com/boltdb/bolt"
 	"os"
 	"sort"
 	"text/tabwriter"
+	"time"
 )
 
 var (
-	w     = new(tabwriter.Writer)
-	count = 0
+	w      = new(tabwriter.Writer)
+	count  = 0
+	dbname = []byte("dnas")
 )
 
-func MakeDB(path string) (db *lvl.DB, err error) {
-	db, err = lvl.OpenFile(path, nil)
-
-	return db, err
-}
-
-func (message *Message) ToLevelDB(db *lvl.DB, options *Options) (err error) {
-	data, err := db.Get([]byte(message.Dns.Question), nil)
+func EncodeDNS(data []Answer) (buff bytes.Buffer, err error) {
 	var buf bytes.Buffer
 
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(data)
+
 	if err != nil {
-		enc := gob.NewEncoder(&buf)
-		eerr := enc.Encode(message.Dns.Answers)
-
-		if eerr != nil {
-			return eerr
-		}
-
-		err = db.Put([]byte(message.Dns.Question), buf.Bytes(), nil)
-
-		return err
+		return buf, err
 	}
 
+	return buf, nil
+}
+
+func DecodeDNS(data []byte) (buff []Answer, err error) {
 	var a []Answer
 	enc := gob.NewDecoder(bytes.NewReader(data))
 	eerr := enc.Decode(&a)
 
 	if eerr != nil {
-		return eerr
+		return a, eerr
 	}
 
-	// for i, aa := range message.Dns.Answers {
-	// fmt.Println(i, aa)
-	// }
-
-	// fmt.Println("GOT DATA!@#!@#!@#!@#!@#!@#:::::::::::::::", a[0].Data, len(a))
-
-	return nil
+	return a, nil
 }
 
-func FindKeyBy(database_path string, question string) {
-	db, dberr := MakeDB(database_path)
+func MakeDB(path string) (db *bolt.DB, err error) {
+	db, err = bolt.Open(path, 0644, nil)
+
+	return db, err
+}
+
+func contains(m Answer, list []Answer) int {
+	for i, b := range list {
+		if b.Record == m.Record && b.Name == m.Name && b.Data == m.Data {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func (message *Message) ToKVDB(options *Options) (err error) {
+
+	db, dberr := MakeDB(options.Database)
+
+	defer db.Close()
 
 	if dberr != nil {
 		fmt.Println(dberr)
 		os.Exit(-1)
 	}
 
-	iter := db.NewIterator(nil, nil)
+	err = db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists(dbname)
 
-	for iter.Next() {
-		key := iter.Key()
-
-		if string(key) != question {
-			continue
+		if err != nil {
+			return err
 		}
 
-		data := iter.Value()
+		data := bucket.Get([]byte(message.Dns.Question))
 
-		var a []Answer
-		enc := gob.NewDecoder(bytes.NewReader(data))
-		eerr := enc.Decode(&a)
+		if data != nil {
 
-		if eerr != nil {
-			panic(eerr)
+			// Update Records
+
+			a, _ := DecodeDNS(data)
+
+			for _, aa := range message.Dns.Answers {
+				index := contains(aa, a)
+
+				if index != -1 {
+					// Update
+					// fmt.Println("UPDATE RECORD!!!!", index)
+					a[index].Active = true
+					a[index].UpdatedAt = time.Now()
+				} else {
+					// Add New
+					// fmt.Println("ADD NEW!!!!!", index)
+					a = append(a, aa)
+				}
+			}
+
+			buf, _ := EncodeDNS(a)
+			err = bucket.Put([]byte(message.Dns.Question), buf.Bytes())
+
+			if err != nil {
+				return err
+			}
+
+		} else {
+
+			buf, _ := EncodeDNS(message.Dns.Answers)
+
+			err = bucket.Put([]byte(message.Dns.Question), buf.Bytes())
+
+			if err != nil {
+				return err
+			}
 		}
 
-		w.Init(os.Stdout, 1, 2, 2, ' ', 0)
+		return nil
+	})
 
-		fmt.Fprintf(w, "\n\tQuestion:\t\033[0;31;49m%s\033[0m\n\n", question)
+	return err
+}
 
-		fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\t\n\n", len(a))
+func FindKeyBy(database_path string, question string) {
 
-		fmt.Fprintf(w, "\tRR\tName\tData\n")
-		fmt.Fprintf(w, "\t----\t----\t----\n")
+	db, dberr := MakeDB(database_path)
 
-		for i := range a {
-			fmt.Fprintf(w, "\t%s", a[i].Record)
-			fmt.Fprintf(w, "\t%s", a[i].Name)
-			fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m\n", a[i].Data)
-		}
+	defer db.Close()
 
-		fmt.Fprintf(w, "\n")
+	if dberr != nil {
+		fmt.Println(dberr)
+		os.Exit(-1)
 	}
 
-	iter.Release()
-	err := iter.Error()
+	db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(dbname)
 
-	if err != nil {
-		panic(err)
-	}
+		if bucket == nil {
+			return fmt.Errorf("Bucket %q not found!", dbname)
+		}
+
+		data := bucket.Get([]byte(question))
+
+		if data != nil {
+
+			a, _ := DecodeDNS(data)
+
+			w.Init(os.Stdout, 1, 2, 2, ' ', 0)
+
+			fmt.Fprintf(w, "\n\tQuestion:\t\033[0;31;49m%s\033[0m\n\n", question)
+
+			fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\t\n\n", len(a))
+
+			fmt.Fprintf(w, "\tRR\tName\tData\n")
+			fmt.Fprintf(w, "\t----\t----\t----\n")
+
+			for i := range a {
+				fmt.Fprintf(w, "\t%s", a[i].Record)
+				fmt.Fprintf(w, "\t%s", a[i].Name)
+				fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m\n", a[i].Data)
+			}
+
+			fmt.Fprintf(w, "\n")
+		}
+
+		return nil
+	})
 }
 
 func ListAllQuestions(database_path string) {
@@ -117,50 +178,46 @@ func ListAllQuestions(database_path string) {
 
 	db, dberr := MakeDB(database_path)
 
+	defer db.Close()
+
 	if dberr != nil {
 		fmt.Println(dberr)
 		os.Exit(-1)
 	}
 
-	iter := db.NewIterator(nil, nil)
+	db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(dbname)
 
-	for iter.Next() {
-		key := iter.Key()
-		data := iter.Value()
-
-		var a []Answer
-		enc := gob.NewDecoder(bytes.NewReader(data))
-		eerr := enc.Decode(&a)
-
-		if eerr != nil {
-			panic(eerr)
+		if bucket == nil {
+			return fmt.Errorf("Bucket %q not found!", dbname)
 		}
 
-		keyValue := string(key)
-		length := len(a)
+		bucket.ForEach(func(key, data []byte) error {
+			a, _ := DecodeDNS(data)
 
-		keys = append(keys, keyValue)
-		list[keyValue] = length
-	}
+			keyValue := string(key)
+			length := len(a)
 
-	iter.Release()
-	err := iter.Error()
+			keys = append(keys, keyValue)
+			list[keyValue] = length
 
-	if err != nil {
-		panic(err)
-	}
+			return nil
+		})
 
-	sort.Strings(keys)
+		sort.Strings(keys)
 
-	fmt.Printf("\n Questions:\n\n")
+		fmt.Printf("\n Questions:\n\n")
 
-	for _, value := range keys {
-		count = count + list[value]
-		fmt.Printf(" * %s (\033[0;32;49m%d\033[0m)\n", value, list[value])
-	}
+		for _, value := range keys {
+			count = count + list[value]
+			fmt.Printf(" * %s (\033[0;32;49m%d\033[0m)\n", value, list[value])
+		}
 
-	fmt.Printf("\n Questions: %d", len(keys))
-	fmt.Printf("\n   Answers: %d\n\n", count)
+		fmt.Printf("\n Questions: %d", len(keys))
+		fmt.Printf("\n   Answers: %d\n\n", count)
+
+		return nil
+	})
 }
 
 func (message *Message) ToStdout(options *Options) {

@@ -33,6 +33,14 @@ func WriteToFile(fo *os.File, json []byte) {
 	}
 }
 
+func WriteToDatabase(message *Message, options *Options) {
+	kverr := message.ToKVDB(options)
+
+	if kverr != nil {
+		// panic(lvlerr)
+	}
+}
+
 func Monitor(options *Options) {
 
 	fmt.Printf("\n %s (%s) - %s\n",
@@ -59,14 +67,6 @@ func Monitor(options *Options) {
 	if ferr != nil {
 		fmt.Fprintf(os.Stderr, "%s Error: %s", NAME, ferr)
 		os.Exit(-1)
-	}
-
-	db, dberr := MakeDB(options.Database)
-
-	defer db.Close()
-
-	if dberr != nil {
-		panic(dberr)
 	}
 
 	var file *os.File
@@ -107,14 +107,7 @@ func Monitor(options *Options) {
 				}()
 			}
 
-			go func() {
-				lvlerr := message.ToLevelDB(db, options)
-
-				if lvlerr != nil {
-					// panic(lvlerr)
-				}
-			}()
-
+			go WriteToDatabase(message, options)
 			message.ToStdout(options)
 		}
 
