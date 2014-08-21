@@ -17,6 +17,7 @@ var (
 	w      = new(tabwriter.Writer)
 	count  = 0
 	dbname = []byte("dnas")
+	layout = "Jan 2, 2006 at 03:04pm (MST)"
 )
 
 func EncodeDNS(data []Answer) (buff bytes.Buffer, err error) {
@@ -101,6 +102,19 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 				}
 			}
 
+			for i, dr := range a {
+				index := contains(dr, message.Dns.Answers)
+
+				a[i].UpdatedAt = time.Now()
+
+				if index == -1 {
+					a[i].Active = false
+				} else {
+					a[i].Active = true
+				}
+
+			}
+
 			buf, _ := EncodeDNS(a)
 			err = bucket.Put([]byte(message.Dns.Question), buf.Bytes())
 
@@ -155,13 +169,20 @@ func FindKeyBy(database_path string, question string) {
 
 			fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\t\n\n", len(a))
 
-			fmt.Fprintf(w, "\tRR\tName\tData\n")
-			fmt.Fprintf(w, "\t----\t----\t----\n")
+			fmt.Fprintf(w, "\tRR\tName\tData\tLast Seen\n")
+			fmt.Fprintf(w, "\t----\t----\t----\t---------\n")
 
 			for i := range a {
 				fmt.Fprintf(w, "\t%s", a[i].Record)
 				fmt.Fprintf(w, "\t%s", a[i].Name)
-				fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m\n", a[i].Data)
+				fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m ", a[i].Data)
+				fmt.Fprintf(w, "\t%s", a[i].UpdatedAt.Format(layout))
+
+				if a[i].Active {
+					fmt.Fprintf(w, "\t(Active: \033[0;32;49m%s\033[0m)\n", "Yes")
+				} else {
+					fmt.Fprintf(w, "\t(Active: \033[0;31;49m%s\033[0m)\n", "No")
+				}
 			}
 
 			fmt.Fprintf(w, "\n")
