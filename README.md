@@ -6,17 +6,22 @@ The hope is to record the data and build metrics on usage and for searching. i.e
 
 ## Install
 
-  * Note: You will need libpcap-dev before you build DNAS.
 
-  `go get github.com/mephux/dnas`
+  1. Vagrant/Docker
+
+    * `vagrant up`
+
+  2. Go Get
+
+    * Note: You will need libpcap-dev before you build DNAS.
+    * `go get github.com/mephux/dnas`
+
+  3. Git
   
-  -- OR --
-  
-  `git clone https://github.com/mephux/dnas.git`
-  
-  `cd dnas`
-  
-  `make`
+    * Note: You will need libpcap-dev before you build DNAS.
+    * `git clone https://github.com/mephux/dnas.git`
+    * `cd dnas`
+    * `make`
 
 ## Usage
 
@@ -46,7 +51,7 @@ The hope is to record the data and build metrics on usage and for searching. i.e
 
   `Example: sudo dnas -i en0 -u mephux`
 
-  ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/screenshot/dnas-output.png)
+  ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/dnas-screenshot.png)
 
 
 ## JSON Output
