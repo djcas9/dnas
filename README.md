@@ -67,4 +67,4 @@ you would like to stalk me, follow [mephux](http://dweb.io/) on
 
 # MIT LICENSE
 
-The MIT License (MIT) - [LICENSE](https://github.com/mephux/dnas/LICENSE)
+The MIT License (MIT) - [LICENSE](https://github.com/mephux/dnas/blob/master/LICENSE)
