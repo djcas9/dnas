@@ -16,7 +16,8 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "docker" do |d|
     d.build_image "/vagrant", args: '-t dnas'
-    d.run "dnas", args: "-i eth0 -H -w dnas.txt -d dnas.db", demonize: true
+    d.run "sudo dnas -i eth0 -w ~/dnas.txt -d ~/dnas.db -H", demonize: false
+    # , args: "-i eth0 -H -w dnas.txt -d dnas.db"
   end
 
   # plugin conflict
