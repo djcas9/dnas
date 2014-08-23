@@ -15,16 +15,19 @@ import (
 
 func chuser(username string) (uid, gid int) {
 	usr, err := user.Lookup(username)
+
 	if err != nil {
 		fmt.Printf("failed to find user %q: %s", username, err)
 	}
 
 	uid, err = strconv.Atoi(usr.Uid)
+
 	if err != nil {
 		fmt.Printf("bad user ID %q: %s", usr.Uid, err)
 	}
 
 	gid, err = strconv.Atoi(usr.Gid)
+
 	if err != nil {
 		fmt.Printf("bad group ID %q: %s", usr.Gid, err)
 	}
@@ -32,6 +35,7 @@ func chuser(username string) (uid, gid int) {
 	if err := syscall.Setgid(gid); err != nil {
 		fmt.Printf("setgid(%d): %s", gid, err)
 	}
+
 	if err := syscall.Setuid(uid); err != nil {
 		fmt.Printf("setuid(%d): %s", uid, err)
 	}
