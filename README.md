@@ -6,6 +6,8 @@ The hope is to record the data and build metrics on usage and for searching. i.e
 
 ## Install
 
+  * Note: You will need libpcap-dev before you build DNAS.
+
   `go get github.com/mephux/dnas`
   
   -- OR --
