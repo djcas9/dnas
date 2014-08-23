@@ -6,6 +6,12 @@ The hope is to record the data and build metrics on usage and for searching. i.e
 
 ## Install
 
+  `go get github.com/mephux/dnas`
+  
+  -- OR --
+  
+  `git clone https://github.com/mephux/dnas.git`
+  `cd dnas`
   `make`
 
 ## Usage
