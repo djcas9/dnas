@@ -6,22 +6,21 @@ The hope is to record the data and build metrics on usage and for searching. i.e
 
 ## Install
 
-
-  1. Vagrant/Docker
-
-    * `vagrant up`
-
-  2. Go Get
+  1. Go Get
 
     * Note: You will need libpcap-dev before you build DNAS.
     * `go get github.com/mephux/dnas`
 
-  3. Git
+  2. Git
   
     * Note: You will need libpcap-dev before you build DNAS.
     * `git clone https://github.com/mephux/dnas.git`
     * `cd dnas`
     * `make`
+
+  3. Vagrant & Docker
+
+    * `vagrant up`
 
 ## Usage
 
