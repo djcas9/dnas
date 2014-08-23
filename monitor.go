@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/growse/pcap"
 	"os"
+
+	"github.com/growse/pcap"
 )
 
 var (

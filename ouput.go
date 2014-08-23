@@ -6,15 +6,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/boltdb/bolt"
 	"os"
 	"sort"
 	"text/tabwriter"
 	"time"
+
+	"github.com/boltdb/bolt"
 )
 
 var (
-	w      = new(tabwriter.Writer)
+	w      = tabwriter.NewWriter(os.Stdout, 1, 2, 2, ' ', 0)
 	count  = 0
 	dbname = []byte("dnas")
 	layout = "Jan 2, 2006 at 03:04pm (MST)"
@@ -163,14 +164,13 @@ func FindKeyBy(database_path string, question string) {
 
 			a, _ := DecodeDNS(data)
 
-			w.Init(os.Stdout, 1, 2, 2, ' ', 0)
-
 			fmt.Fprintf(w, "\n\tQuestion:\t\033[0;31;49m%s\033[0m\n\n", question)
 
-			fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\t\n\n", len(a))
+			fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\n\n", len(a))
 
-			fmt.Fprintf(w, "\tRR\tName\tData\tLast Seen\n")
-			fmt.Fprintf(w, "\t----\t----\t----\t---------\n")
+			fmt.Fprintf(w, "\tRR\tName\tData\n")
+
+			fmt.Fprintf(w, "\t--\t----\t----\n")
 
 			for i := range a {
 				fmt.Fprintf(w, "\t%s", a[i].Record)
@@ -187,6 +187,8 @@ func FindKeyBy(database_path string, question string) {
 
 			fmt.Fprintf(w, "\n")
 		}
+
+		w.Flush()
 
 		return nil
 	})

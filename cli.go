@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/sevlyar/go-daemon"
-	"github.com/visionmedia/go-flags"
 	"log"
 	"os"
+
+	"github.com/sevlyar/go-daemon"
+	"github.com/visionmedia/go-flags"
 
 	"os/user"
 	"strconv"

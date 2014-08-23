@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/growse/pcap"
-	"github.com/miekg/dns"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/growse/pcap"
+	"github.com/miekg/dns"
 )
 
 const (
