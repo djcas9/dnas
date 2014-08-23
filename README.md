@@ -6,18 +6,7 @@ The hope is to record the data and build metrics on usage and for searching. i.e
 
 ## Install
 
-  `go get github.com/mephux/dnas`
-
-  then just run `dnas` if `$GOPATH/bin` is in your path.
-
-  -- OR --
-
-  `git clone git@github.com:mephux/dnas.git`
-
-  `cd dnas/`
-
-  `go build`
-
+  `make`
 
 ## Usage
 
