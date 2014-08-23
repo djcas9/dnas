@@ -6,18 +6,17 @@ The hope is to record the data and build metrics on usage and for searching. i.e
 
 ## Install
 
+  * Note: You will need libpcap-dev before you build DNAS.
+
   `go get github.com/mephux/dnas`
-
-  then just run `dnas` if `$GOPATH/bin` is in your path.
-
+  
   -- OR --
-
-  `git clone git@github.com:mephux/dnas.git`
-
-  `cd dnas/`
-
-  `go build`
-
+  
+  `git clone https://github.com/mephux/dnas.git`
+  
+  `cd dnas`
+  
+  `make`
 
 ## Usage
 
@@ -29,12 +28,14 @@ The hope is to record the data and build metrics on usage and for searching. i.e
   Options:
     -i, --interface=eth0    Interface to monitor
     -p, --port=53           DNS port (53)
-    -d, --database=         Database file path
-    -f, --filter=*.com      Filter by question
+    -d, --database=FILE     Database file path (dnas.db)
+    -F, --filter=*.com      Filter by question
     -D, --daemon            Run DNAS in daemon mode
     -w, --write=FILE        Write JSON output to log file
     -u, --user=USER         Drop privileges to this user
     -H, --hexdump           Show hexdump of DNS packet
+    -f, --find=STRING       Search for DNS record by question
+    -l, --list              List all seen DNS questions
     -v, --version           Show version information
 
   Help Options:
