@@ -51,7 +51,7 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
       -w, --write=FILE              Write JSON output to log file
       -u, --user=USER               Drop privileges to this user
       -H, --hexdump                 Show hexdump of DNS packet
-      -q, --find-question=STRING    Search for DNS record by question
+      -q, --find-question=REGEXP    Search for DNS record by question
       -a, --find-answer=STRING      Search for DNS records by answer data
       -l, --list                    List all seen DNS questions
       -v, --version                 Show version information
