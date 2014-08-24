@@ -1,7 +1,7 @@
 # DNAS - Domain Name Analytics System
 [![Build Status](https://drone.io/github.com/mephux/dnas/status.png)](https://drone.io/github.com/mephux/dnas/latest)
 
-Logs all DNS questions and answers for searching and metrics. DNA answers are stored in
+Logs all DNS questions and answers for searching and metrics. DNA answers are stored as
 a bloom filter for better performance (less questions asked to the embeded key/value store).
 
 DNAS supports logging to an embeded Bolt (https://github.com/boltdb/bolt) key / value store 
@@ -28,6 +28,13 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
 
     * `vagrant up`
 
+## OUTPUT
+
+  `Example: sudo dnas -i en0 -H -u mephux`
+
+  ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/dnas.gif)
+
+
 ## Usage
 
 ```
@@ -44,7 +51,7 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
       -w, --write=FILE              Write JSON output to log file
       -u, --user=USER               Drop privileges to this user
       -H, --hexdump                 Show hexdump of DNS packet
-      -q, --find-question=STRING    Search for DNS record by question
+      -q, --find-question=REGEXP    Search for DNS record by question
       -a, --find-answer=STRING      Search for DNS records by answer data
       -l, --list                    List all seen DNS questions
       -v, --version                 Show version information
@@ -52,13 +59,6 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
     Help Options:
       -h, --help                    Show this help message
 ```
-
-## STDOUT
-
-  `Example: sudo dnas -i en0 -H -u mephux`
-
-  ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/dnas-screenshot.png)
-
 
 ## JSON Output
 
