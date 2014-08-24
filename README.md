@@ -1,7 +1,7 @@
 # DNAS - Domain Name Analytics System
 [![Build Status](https://drone.io/github.com/mephux/dnas/status.png)](https://drone.io/github.com/mephux/dnas/latest)
 
-Logs all DNS questions and answers for searching and metrics. DNA answers are stored in
+Logs all DNS questions and answers for searching and metrics. DNA answers are stored as
 a bloom filter for better performance (less questions asked to the embeded key/value store).
 
 DNAS supports logging to an embeded Bolt (https://github.com/boltdb/bolt) key / value store 
