@@ -28,6 +28,13 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
 
     * `vagrant up`
 
+## OUTPUT
+
+  `Example: sudo dnas -i en0 -H -u mephux`
+
+  ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/dnas.gif)
+
+
 ## Usage
 
 ```
@@ -52,13 +59,6 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
     Help Options:
       -h, --help                    Show this help message
 ```
-
-## STDOUT
-
-  `Example: sudo dnas -i en0 -H -u mephux`
-
-  ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/dnas.gif)
-
 
 ## JSON Output
 
