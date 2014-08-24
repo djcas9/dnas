@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"text/tabwriter"
 	"time"
 
+	"github.com/AndreasBriese/bloom"
 	"github.com/boltdb/bolt"
 )
 
@@ -21,7 +23,12 @@ var (
 	layout = "Jan 2, 2006 at 03:04pm (MST)"
 )
 
-func EncodeDNS(data []Answer) (buff bytes.Buffer, err error) {
+type Value struct {
+	Answers []Answer
+	Bloom   []byte
+}
+
+func EncodeDNS(data Value) (buff bytes.Buffer, err error) {
 	var buf bytes.Buffer
 
 	enc := gob.NewEncoder(&buf)
@@ -34,8 +41,8 @@ func EncodeDNS(data []Answer) (buff bytes.Buffer, err error) {
 	return buf, nil
 }
 
-func DecodeDNS(data []byte) (buff []Answer, err error) {
-	var a []Answer
+func DecodeDNS(data []byte) (buff Value, err error) {
+	var a Value
 	enc := gob.NewDecoder(bytes.NewReader(data))
 	eerr := enc.Decode(&a)
 
@@ -60,6 +67,35 @@ func contains(m Answer, list []Answer) int {
 	}
 
 	return -1
+}
+
+func prettyPrint(question string, a Value) {
+
+	fmt.Fprintf(w, "\n\tQuestion:\t\033[0;31;49m%s\033[0m\n\n", question)
+
+	fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\n\n", len(a.Answers))
+
+	fmt.Fprintf(w, "\tRR\tName\tData\n")
+
+	fmt.Fprintf(w, "\t--\t----\t----\n")
+
+	for i := range a.Answers {
+		fmt.Fprintf(w, "\t%s", a.Answers[i].Record)
+		fmt.Fprintf(w, "\t%s", a.Answers[i].Name)
+		fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m ", a.Answers[i].Data)
+		fmt.Fprintf(w, "\t%s", a.Answers[i].UpdatedAt.Format(layout))
+
+		if a.Answers[i].Active {
+			fmt.Fprintf(w, "\t(Active: \033[0;32;49m%s\033[0m)\n", "Yes")
+		} else {
+			fmt.Fprintf(w, "\t(Active: \033[0;31;49m%s\033[0m)\n", "No")
+		}
+	}
+
+	fmt.Fprintf(w, "\n")
+
+	w.Flush()
+
 }
 
 func (message *Message) ToKVDB(options *Options) (err error) {
@@ -89,29 +125,29 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 			a, _ := DecodeDNS(data)
 
 			for _, aa := range message.Dns.Answers {
-				index := contains(aa, a)
+				index := contains(aa, a.Answers)
 
 				if index != -1 {
 					// Update
 					// fmt.Println("UPDATE RECORD!!!!", index)
-					a[index].Active = true
-					a[index].UpdatedAt = time.Now()
+					a.Answers[index].Active = true
+					a.Answers[index].UpdatedAt = time.Now()
 				} else {
 					// Add New
 					// fmt.Println("ADD NEW!!!!!", index)
-					a = append(a, aa)
+					a.Answers = append(a.Answers, aa)
 				}
 			}
 
-			for i, dr := range a {
+			for i, dr := range a.Answers {
 				index := contains(dr, message.Dns.Answers)
 
-				a[i].UpdatedAt = time.Now()
+				a.Answers[i].UpdatedAt = time.Now()
 
 				if index == -1 {
-					a[i].Active = false
+					a.Answers[i].Active = false
 				} else {
-					a[i].Active = true
+					a.Answers[i].Active = true
 				}
 
 			}
@@ -125,7 +161,9 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 
 		} else {
 
-			buf, _ := EncodeDNS(message.Dns.Answers)
+			val := Value{Answers: message.Dns.Answers, Bloom: message.Bloom}
+
+			buf, _ := EncodeDNS(val)
 
 			err = bucket.Put([]byte(message.Dns.Question), buf.Bytes())
 
@@ -140,7 +178,7 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 	return err
 }
 
-func FindKeyBy(database_path string, question string) {
+func findByQuestion(database_path string, r *regexp.Regexp) {
 
 	db, dberr := MakeDB(database_path)
 
@@ -158,43 +196,61 @@ func FindKeyBy(database_path string, question string) {
 			return fmt.Errorf("Bucket %q not found!", dbname)
 		}
 
-		data := bucket.Get([]byte(question))
+		bucket.ForEach(func(key, data []byte) error {
 
-		if data != nil {
+			if !r.Match(key) {
+				return nil
+			}
 
 			a, _ := DecodeDNS(data)
 
-			fmt.Fprintf(w, "\n\tQuestion:\t\033[0;31;49m%s\033[0m\n\n", question)
+			prettyPrint(string(key), a)
 
-			fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\n\n", len(a))
-
-			fmt.Fprintf(w, "\tRR\tName\tData\n")
-
-			fmt.Fprintf(w, "\t--\t----\t----\n")
-
-			for i := range a {
-				fmt.Fprintf(w, "\t%s", a[i].Record)
-				fmt.Fprintf(w, "\t%s", a[i].Name)
-				fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m ", a[i].Data)
-				fmt.Fprintf(w, "\t%s", a[i].UpdatedAt.Format(layout))
-
-				if a[i].Active {
-					fmt.Fprintf(w, "\t(Active: \033[0;32;49m%s\033[0m)\n", "Yes")
-				} else {
-					fmt.Fprintf(w, "\t(Active: \033[0;31;49m%s\033[0m)\n", "No")
-				}
-			}
-
-			fmt.Fprintf(w, "\n")
-		}
-
-		w.Flush()
+			return nil
+		})
 
 		return nil
 	})
 }
 
-func ListAllQuestions(database_path string) {
+func findByAnswer(database_path string, find []byte) {
+
+	db, dberr := MakeDB(database_path)
+
+	defer db.Close()
+
+	if dberr != nil {
+		fmt.Println(dberr)
+		os.Exit(-1)
+	}
+
+	db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(dbname)
+
+		if bucket == nil {
+			return fmt.Errorf("Bucket %q not found!", dbname)
+		}
+
+		bucket.ForEach(func(key, data []byte) error {
+
+			a, _ := DecodeDNS(data)
+
+			bf := bloom.JSONUnmarshal(a.Bloom)
+
+			isIn := bf.Has(find)
+
+			if isIn {
+				prettyPrint(string(key), a)
+			}
+
+			return nil
+		})
+
+		return nil
+	})
+}
+
+func listAllQuestions(database_path string) {
 	list := make(map[string]int)
 	var count int = 0
 	var keys []string
@@ -219,7 +275,7 @@ func ListAllQuestions(database_path string) {
 			a, _ := DecodeDNS(data)
 
 			keyValue := string(key)
-			length := len(a)
+			length := len(a.Answers)
 
 			keys = append(keys, keyValue)
 			list[keyValue] = length

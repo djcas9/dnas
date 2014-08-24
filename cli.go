@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 
 	"github.com/sevlyar/go-daemon"
 	"github.com/visionmedia/go-flags"
@@ -44,17 +45,18 @@ func chuser(username string) (uid, gid int) {
 }
 
 type Options struct {
-	Interface string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
-	Port      int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
-	Database  string `short:"d" long:"database" description:"Database file path" value-name:"FILE"`
-	Filter    string `short:"F" long:"filter" description:"Filter by question" default:"" value-name:"*.com"`
-	Daemon    bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
-	Write     string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
-	User      string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
-	Hexdump   bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
-	Find      string `short:"f" long:"find" description:"Search for DNS record by question" value-name:"STRING"`
-	List      bool   `short:"l" long:"list" description:"List all seen DNS questions"`
-	Version   bool   `short:"v" long:"version" description:"Show version information"`
+	Interface    string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
+	Port         int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
+	Database     string `short:"d" long:"database" description:"Database file path" value-name:"FILE"`
+	Filter       string `short:"F" long:"filter" description:"Filter by question" default:"" value-name:"*.com"`
+	Daemon       bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
+	Write        string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
+	User         string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
+	Hexdump      bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
+	FindQuestion string `short:"q" long:"find-question" description:"Search for DNS record by question" value-name:"STRING"`
+	FindAnswer   string `short:"a" long:"find-answer" description:"Search for DNS records by answer data" value-name:"STRING"`
+	List         bool   `short:"l" long:"list" description:"List all seen DNS questions"`
+	Version      bool   `short:"v" long:"version" description:"Show version information"`
 }
 
 func Usage(p *flags.Parser) {
@@ -97,52 +99,59 @@ func CLIRun(f func(options *Options)) {
 		options.Database = DATABASE
 	}
 
-	if options.Find != "" || options.List {
+	if options.List {
+		listAllQuestions(options.Database)
+		os.Exit(1)
+	} else if options.FindQuestion != "" {
+		r, err := regexp.Compile(options.FindQuestion)
 
-		if options.List {
-			ListAllQuestions(options.Database)
-		} else {
-			FindKeyBy(options.Database, options.Find)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
 		}
 
+		findByQuestion(options.Database, r)
+		os.Exit(1)
+	} else if options.FindAnswer != "" {
+		findByAnswer(options.Database, []byte(options.FindAnswer))
+		os.Exit(1)
+	}
+
+	if options.Interface == "" {
+		Usage(parser)
+	}
+
+	if options.Daemon {
+
+		cntxt := &daemon.Context{
+			PidFileName: "dnas.pid",
+			PidFilePerm: 0644,
+			LogFileName: "dnas.log",
+			LogFilePerm: 0640,
+			WorkDir:     "./",
+			Umask:       027,
+		}
+
+		d, err := cntxt.Reborn()
+
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		if d != nil {
+			return
+		}
+
+		defer cntxt.Release()
+
+		go f(options)
+
+		err = daemon.ServeSignals()
+
+		if err != nil {
+			log.Println("Error:", err)
+		}
 	} else {
-
-		if options.Interface == "" {
-			Usage(parser)
-		}
-
-		if options.Daemon {
-
-			cntxt := &daemon.Context{
-				PidFileName: "dnas.pid",
-				PidFilePerm: 0644,
-				LogFileName: "dnas.log",
-				LogFilePerm: 0640,
-				WorkDir:     "./",
-				Umask:       027,
-			}
-
-			d, err := cntxt.Reborn()
-
-			if err != nil {
-				log.Fatalln(err)
-			}
-
-			if d != nil {
-				return
-			}
-
-			defer cntxt.Release()
-
-			go f(options)
-
-			err = daemon.ServeSignals()
-
-			if err != nil {
-				log.Println("Error:", err)
-			}
-		} else {
-			f(options)
-		}
+		f(options)
 	}
 }

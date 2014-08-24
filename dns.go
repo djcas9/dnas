@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AndreasBriese/bloom"
 	"github.com/growse/pcap"
 	"github.com/miekg/dns"
 )
@@ -43,6 +44,7 @@ type Message struct {
 	SrcIp     string    `json:"srcip"`
 	Timestamp time.Time `json:"timestamp"`
 	Packet    []byte    `json:"packet"`
+	Bloom     []byte    `json:"bloom"`
 }
 
 func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
@@ -102,11 +104,12 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 		in := []byte(message.Dns.Question)
 		match := r.Match([]byte(in))
 
-		if match {
-		} else {
+		if !match {
 			return message, fmt.Errorf("Error: Question did not match filter.")
 		}
 	}
+
+	bf := bloom.New(float64(500), float64(0.01))
 
 	for i := range msg.Answer {
 		split := strings.Split(msg.Answer[i].String(), "\t")
@@ -120,8 +123,13 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 			UpdatedAt: time.Now(),
 			Active:    true,
 		}
+
+		bf.Add([]byte(split[4]))
+
 		message.Dns.Answers = append(message.Dns.Answers, answer)
 	}
+
+	message.Bloom = bf.JSONMarshal()
 
 	return message, nil
 }
