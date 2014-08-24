@@ -12,19 +12,19 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
 
 ## Install
 
-  1. Go Get
+  * Go Get
 
     * Note: You will need libpcap-dev before you build DNAS.
     * `go get github.com/mephux/dnas`
 
-  2. Git
+  * Git
   
     * Note: You will need libpcap-dev before you build DNAS.
     * `git clone https://github.com/mephux/dnas.git`
     * `cd dnas`
     * `make`
 
-  3. Vagrant & Docker
+  * Vagrant & Docker
 
     * `vagrant up`
 
