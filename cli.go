@@ -53,7 +53,7 @@ type Options struct {
 	Write        string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
 	User         string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
 	Hexdump      bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
-	FindQuestion string `short:"q" long:"find-question" description:"Search for DNS record by question" value-name:"STRING"`
+	FindQuestion string `short:"q" long:"find-question" description:"Search for DNS records by question" value-name:"REGEXP"`
 	FindAnswer   string `short:"a" long:"find-answer" description:"Search for DNS records by answer data" value-name:"STRING"`
 	List         bool   `short:"l" long:"list" description:"List all seen DNS questions"`
 	Version      bool   `short:"v" long:"version" description:"Show version information"`
