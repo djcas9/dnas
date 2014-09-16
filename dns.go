@@ -6,22 +6,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AndreasBriese/bloom"
 	"github.com/growse/pcap"
 	"github.com/miekg/dns"
 )
 
 const (
-	TYPE_IP  = 0x0800
-	TYPE_ARP = 0x0806
-	TYPE_IP6 = 0x86DD
+	// IPTcp TCP type code
+	IPTcp = 6
 
-	IP_ICMP = 1
-	IP_INIP = 4
-	IP_TCP  = 6
-	IP_UDP  = 17
+	// IPUdp UDP type code
+	IPUdp = 17
 )
 
+// Answer holds dns answer data
 type Answer struct {
 	Class     string    `json:"class"`
 	Name      string    `json:"name"`
@@ -33,20 +30,22 @@ type Answer struct {
 	Active    bool      `json:"active"`
 }
 
+// Message used to pas and process data for various output options
 type Message struct {
-	Dns struct {
+	DNS struct {
 		Answers  []Answer `json:"answers"`
 		Question string   `json:"question"`
 		Length   int      `json:"length"`
 	} `json:"dns"`
-	DstIp     string    `json:"dstip"`
+	DstIP     string    `json:"dstip"`
 	Protocol  string    `json:"protocol"`
-	SrcIp     string    `json:"srcip"`
+	SrcIP     string    `json:"srcip"`
 	Timestamp time.Time `json:"timestamp"`
 	Packet    []byte    `json:"packet"`
 	Bloom     []byte    `json:"bloom"`
 }
 
+// DNS process and parse DNS packets
 func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 	message := &Message{}
 
@@ -64,7 +63,7 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 		return message, fmt.Errorf("Error: Missing header information.")
 	}
 
-	message.Dns.Length = msg.Len()
+	message.DNS.Length = msg.Len()
 
 	packet, _ := msg.Pack()
 
@@ -75,41 +74,39 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 	if ip4ok {
 
 		switch ip4hdr.Protocol {
-		case IP_TCP:
+		case IPTcp:
 			message.Protocol = "TCP"
-		case IP_UDP:
+		case IPUdp:
 			message.Protocol = "UDP"
 		default:
 			message.Protocol = "N/A"
 		}
 
-		message.SrcIp = ip4hdr.SrcAddr()
-		message.DstIp = ip4hdr.DestAddr()
+		message.SrcIP = ip4hdr.SrcAddr()
+		message.DstIP = ip4hdr.DestAddr()
 
 	} else {
 		ip6hdr, _ := pkt.Headers[0].(*pcap.Ip6hdr)
 
-		message.SrcIp = ip6hdr.SrcAddr()
-		message.DstIp = ip6hdr.DestAddr()
+		message.SrcIP = ip6hdr.SrcAddr()
+		message.DstIP = ip6hdr.DestAddr()
 		fmt.Println(ip6hdr)
 	}
 
 	for i := range msg.Question {
-		message.Dns.Question = msg.Question[i].Name
+		message.DNS.Question = msg.Question[i].Name
 	}
 
 	if filter != "" {
 		r, _ := regexp.Compile(filter)
 
-		in := []byte(message.Dns.Question)
+		in := []byte(message.DNS.Question)
 		match := r.Match([]byte(in))
 
 		if !match {
 			return message, fmt.Errorf("Error: Question did not match filter.")
 		}
 	}
-
-	bf := bloom.New(float64(500), float64(0.01))
 
 	for i := range msg.Answer {
 		split := strings.Split(msg.Answer[i].String(), "\t")
@@ -124,12 +121,8 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 			Active:    true,
 		}
 
-		bf.Add([]byte(split[4]))
-
-		message.Dns.Answers = append(message.Dns.Answers, answer)
+		message.DNS.Answers = append(message.DNS.Answers, answer)
 	}
-
-	message.Bloom = bf.JSONMarshal()
 
 	return message, nil
 }

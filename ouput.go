@@ -9,25 +9,31 @@ import (
 	"os"
 	"regexp"
 	"sort"
-	"text/tabwriter"
 	"time"
 
 	"github.com/AndreasBriese/bloom"
 	"github.com/boltdb/bolt"
+	"github.com/karlbunch/tablewriter"
+	"github.com/mgutz/ansi"
 )
 
 var (
-	w      = tabwriter.NewWriter(os.Stdout, 1, 2, 2, ' ', 0)
 	count  = 0
 	dbname = []byte("dnas")
-	layout = "Jan 2, 2006 at 03:04pm (MST)"
+	layout = "01/02/06 03:04pm (MST)"
+	lime   = ansi.ColorCode("green+h:black")
+	red    = ansi.ColorCode("red")
+	green  = ansi.ColorCode("green")
+	reset  = ansi.ColorCode("reset")
 )
 
+// Value holds the dns answers and bloom filter fior database storage
 type Value struct {
 	Answers []Answer
 	Bloom   []byte
 }
 
+// EncodeDNS encode the Value struct for storage in the database.
 func EncodeDNS(data Value) (buff bytes.Buffer, err error) {
 	var buf bytes.Buffer
 
@@ -41,6 +47,7 @@ func EncodeDNS(data Value) (buff bytes.Buffer, err error) {
 	return buf, nil
 }
 
+// DecodeDNS decode the Value struct from the database
 func DecodeDNS(data []byte) (buff Value, err error) {
 	var a Value
 	enc := gob.NewDecoder(bytes.NewReader(data))
@@ -53,6 +60,7 @@ func DecodeDNS(data []byte) (buff Value, err error) {
 	return a, nil
 }
 
+// MakeDB create or open an existing database file
 func MakeDB(path string) (db *bolt.DB, err error) {
 	db, err = bolt.Open(path, 0644, nil)
 
@@ -69,35 +77,40 @@ func contains(m Answer, list []Answer) int {
 	return -1
 }
 
-func prettyPrint(question string, a Value) {
+func prettyPrint(question string, a Value, count int) {
 
-	fmt.Fprintf(w, "\n\tQuestion:\t\033[0;31;49m%s\033[0m\n\n", question)
+	fmt.Printf("---   %d   ---\n", count)
 
-	fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\n\n", len(a.Answers))
+	fmt.Printf("\nQuestion: \033[0;31;49m%s\033[0m\n\n", question)
 
-	fmt.Fprintf(w, "\tRR\tName\tData\n")
+	fmt.Printf("\033[0;32;49mAnswers (%d):\033[0m\n\n", len(a.Answers))
 
-	fmt.Fprintf(w, "\t--\t----\t----\n")
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"RR", "Name", "Data", "Last Seen", "Active"})
+	// table.SetBorder(false)
 
-	for i := range a.Answers {
-		fmt.Fprintf(w, "\t%s", a.Answers[i].Record)
-		fmt.Fprintf(w, "\t%s", a.Answers[i].Name)
-		fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m ", a.Answers[i].Data)
-		fmt.Fprintf(w, "\t%s", a.Answers[i].UpdatedAt.Format(layout))
+	for i, aa := range a.Answers {
 
-		if a.Answers[i].Active {
-			fmt.Fprintf(w, "\t(Active: \033[0;32;49m%s\033[0m)\n", "Yes")
-		} else {
-			fmt.Fprintf(w, "\t(Active: \033[0;31;49m%s\033[0m)\n", "No")
+		active := green + "Yes" + reset
+
+		if !a.Answers[i].Active {
+			active = red + "No" + reset
 		}
+
+		table.Append([]string{
+			aa.Record,
+			aa.Name,
+			lime + aa.Data + reset,
+			aa.UpdatedAt.Format(layout),
+			active,
+		})
 	}
 
-	fmt.Fprintf(w, "\n")
-
-	w.Flush()
-
+	table.Render()
+	fmt.Printf("\n")
 }
 
+// ToKVDB write data to key/value database
 func (message *Message) ToKVDB(options *Options) (err error) {
 
 	db, dberr := MakeDB(options.Database)
@@ -109,6 +122,8 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 		os.Exit(-1)
 	}
 
+	bf := bloom.New(float64(1<<16), float64(0.01))
+
 	err = db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(dbname)
 
@@ -116,7 +131,7 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 			return err
 		}
 
-		data := bucket.Get([]byte(message.Dns.Question))
+		data := bucket.Get([]byte(message.DNS.Question))
 
 		if data != nil {
 
@@ -124,7 +139,7 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 
 			a, _ := DecodeDNS(data)
 
-			for _, aa := range message.Dns.Answers {
+			for _, aa := range message.DNS.Answers {
 				index := contains(aa, a.Answers)
 
 				if index != -1 {
@@ -140,7 +155,7 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 			}
 
 			for i, dr := range a.Answers {
-				index := contains(dr, message.Dns.Answers)
+				index := contains(dr, message.DNS.Answers)
 
 				a.Answers[i].UpdatedAt = time.Now()
 
@@ -150,10 +165,13 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 					a.Answers[i].Active = true
 				}
 
+				bf.Add([]byte(a.Answers[i].Data))
 			}
 
+			a.Bloom = bf.JSONMarshal()
+
 			buf, _ := EncodeDNS(a)
-			err = bucket.Put([]byte(message.Dns.Question), buf.Bytes())
+			err = bucket.Put([]byte(message.DNS.Question), buf.Bytes())
 
 			if err != nil {
 				return err
@@ -161,11 +179,11 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 
 		} else {
 
-			val := Value{Answers: message.Dns.Answers, Bloom: message.Bloom}
+			val := Value{Answers: message.DNS.Answers, Bloom: message.Bloom}
 
 			buf, _ := EncodeDNS(val)
 
-			err = bucket.Put([]byte(message.Dns.Question), buf.Bytes())
+			err = bucket.Put([]byte(message.DNS.Question), buf.Bytes())
 
 			if err != nil {
 				return err
@@ -178,9 +196,11 @@ func (message *Message) ToKVDB(options *Options) (err error) {
 	return err
 }
 
-func findByQuestion(database_path string, r *regexp.Regexp) {
+func findByQuestion(database string, r *regexp.Regexp) {
 
-	db, dberr := MakeDB(database_path)
+	fmt.Printf("\n")
+	var qcount int
+	db, dberr := MakeDB(database)
 
 	defer db.Close()
 
@@ -204,7 +224,8 @@ func findByQuestion(database_path string, r *regexp.Regexp) {
 
 			a, _ := DecodeDNS(data)
 
-			prettyPrint(string(key), a)
+			qcount++
+			prettyPrint(string(key), a, qcount)
 
 			return nil
 		})
@@ -213,9 +234,11 @@ func findByQuestion(database_path string, r *regexp.Regexp) {
 	})
 }
 
-func findByAnswer(database_path string, find []byte) {
+func findByAnswer(database string, find []byte) {
 
-	db, dberr := MakeDB(database_path)
+	fmt.Printf("\n")
+	var acount int
+	db, dberr := MakeDB(database)
 
 	defer db.Close()
 
@@ -234,13 +257,13 @@ func findByAnswer(database_path string, find []byte) {
 		bucket.ForEach(func(key, data []byte) error {
 
 			a, _ := DecodeDNS(data)
-
 			bf := bloom.JSONUnmarshal(a.Bloom)
 
-			isIn := bf.Has(find)
-
-			if isIn {
-				prettyPrint(string(key), a)
+			if len(a.Bloom) > 0 {
+				if bf.Has(find) {
+					acount++
+					prettyPrint(string(key), a, acount)
+				}
 			}
 
 			return nil
@@ -250,12 +273,12 @@ func findByAnswer(database_path string, find []byte) {
 	})
 }
 
-func listAllQuestions(database_path string) {
+func listAllQuestions(database string) {
 	list := make(map[string]int)
-	var count int = 0
+	var count int
 	var keys []string
 
-	db, dberr := MakeDB(database_path)
+	db, dberr := MakeDB(database)
 
 	defer db.Close()
 
@@ -299,38 +322,22 @@ func listAllQuestions(database_path string) {
 	})
 }
 
+// ToStdout write data to standard out
 func (message *Message) ToStdout(options *Options) {
-	w.Init(os.Stdout, 1, 2, 2, ' ', 0)
 
 	count++
 
-	fmt.Fprintf(w, "\t---\t%d\t---\n", count)
-	fmt.Fprintf(w, "\n")
+	val := Value{Answers: message.DNS.Answers, Bloom: message.Bloom}
 
-	fmt.Fprintf(w, "\tQuestion:\t\033[0;31;49m%s\033[0m\n", message.Dns.Question)
-	fmt.Fprintf(w, "\tTimestamp:\t%s\n", message.Timestamp)
-	fmt.Fprintf(w, "\tSource:\t%s\n", message.SrcIp)
-	fmt.Fprintf(w, "\tDestination:\t%s\n", message.DstIp)
-	fmt.Fprintf(w, "\tLength:\t%d\n\n", message.Dns.Length)
-
-	fmt.Fprintf(w, "\t\033[0;32;49mAnswers (%d):\033[0m\t\n\n", len(message.Dns.Answers))
-
-	fmt.Fprintf(w, "\tRR\tName\tData\n")
-	fmt.Fprintf(w, "\t----\t----\t----\n")
-
-	for i := range message.Dns.Answers {
-		fmt.Fprintf(w, "\t%s", message.Dns.Answers[i].Record)
-		fmt.Fprintf(w, "\t%s", message.Dns.Answers[i].Name)
-		fmt.Fprintf(w, "\t\033[0;32;49m%s\033[0m\n", message.Dns.Answers[i].Data)
-	}
+	prettyPrint(message.DNS.Question, val, count)
 
 	if options.Hexdump {
-		fmt.Fprintf(w, "\n\t\033[0;32;49mHexdump:\033[0m\n\n%s\n", hex.Dump(message.Packet))
+		fmt.Printf("\033[0;32;49mHexdump:\033[0m\n\n%s\n", hex.Dump(message.Packet))
 	}
 
-	fmt.Fprintf(w, "\n")
 }
 
+// ToJSON convert Message struct to json
 func (message *Message) ToJSON() ([]byte, error) {
 	return json.Marshal(message)
 }

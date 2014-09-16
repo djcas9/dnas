@@ -11,6 +11,7 @@ var (
 	snaplen = 65536
 )
 
+// OpenFile opens or creates a file for json logging
 func OpenFile(path string) *os.File {
 	var fo *os.File
 	var ferr error
@@ -28,12 +29,14 @@ func OpenFile(path string) *os.File {
 	return fo
 }
 
+// WriteToFile write json output to file
 func WriteToFile(fo *os.File, json []byte) {
 	if _, err := fo.WriteString(string(json) + "\n"); err != nil {
 		panic(err)
 	}
 }
 
+// WriteToDatabase write data to key/value database
 func WriteToDatabase(message *Message, options *Options) {
 	kverr := message.ToKVDB(options)
 
@@ -42,12 +45,14 @@ func WriteToDatabase(message *Message, options *Options) {
 	}
 }
 
+// Monitor bind and monitor for DNS packets. This will also
+// handle the various output methods.
 func Monitor(options *Options) {
 
 	fmt.Printf("\n %s (%s) - %s\n",
-		NAME,
-		VERSION,
-		DESCRIPTION,
+		Name,
+		Version,
+		Description,
 	)
 
 	hostname, _ := os.Hostname()
@@ -59,14 +64,14 @@ func Monitor(options *Options) {
 	h, err := pcap.OpenLive(options.Interface, int32(snaplen), true, 500)
 
 	if h == nil {
-		fmt.Fprintf(os.Stderr, "%s Error: %s\n", NAME, err)
+		fmt.Fprintf(os.Stderr, "%s Error: %s\n", Name, err)
 		os.Exit(-1)
 	}
 
 	ferr := h.SetFilter(expr)
 
 	if ferr != nil {
-		fmt.Fprintf(os.Stderr, "%s Error: %s", NAME, ferr)
+		fmt.Fprintf(os.Stderr, "%s Error: %s", Name, ferr)
 		os.Exit(-1)
 	}
 
@@ -114,5 +119,5 @@ func Monitor(options *Options) {
 
 	}
 
-	fmt.Fprintf(os.Stderr, "%s Error: %s\n", NAME, h.Geterror())
+	fmt.Fprintf(os.Stderr, "%s Error: %s\n", Name, h.Geterror())
 }

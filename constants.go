@@ -1,9 +1,18 @@
 package main
 
 const (
-	NAME          = "DNAS"
-	DESCRIPTION   = "Domain Name Analytics System"
-	DATABASE_PATH = ".dnas/dnas.db"
-	VERSION       = "0.1.0"
-	DATABASE      = "dnas.db"
+	// Name application name
+	Name = "DNAS"
+
+	// Description application description
+	Description = "Domain Name Analytics System"
+
+	// DatabasePath the default dnas database file path
+	DatabasePath = ".dnas/dnas.db"
+
+	// Version application version number
+	Version = "0.1.0"
+
+	// Database the default database file name
+	Database = "dnas.db"
 )

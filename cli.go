@@ -44,6 +44,7 @@ func chuser(username string) (uid, gid int) {
 	return uid, gid
 }
 
+// Options cli command options
 type Options struct {
 	Interface    string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
 	Port         int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
@@ -59,11 +60,11 @@ type Options struct {
 	Version      bool   `short:"v" long:"version" description:"Show version information"`
 }
 
-func Usage(p *flags.Parser) {
+func printUsage(p *flags.Parser) {
 	fmt.Printf("\n  %s (%s) - %s\n",
-		NAME,
-		VERSION,
-		DESCRIPTION,
+		Name,
+		Version,
+		Description,
 	)
 
 	p.WriteHelp(os.Stdout)
@@ -71,16 +72,17 @@ func Usage(p *flags.Parser) {
 	os.Exit(1)
 }
 
-func Version() {
+func printVersion() {
 	fmt.Printf("%s - %s - Version: %s\n",
-		NAME,
-		DESCRIPTION,
-		VERSION,
+		Name,
+		Description,
+		Version,
 	)
 
 	os.Exit(1)
 }
 
+// CLIRun start DNAS and process all command-line options
 func CLIRun(f func(options *Options)) {
 
 	options := &Options{}
@@ -88,15 +90,15 @@ func CLIRun(f func(options *Options)) {
 	var parser = flags.NewParser(options, flags.Default)
 
 	if _, err := parser.Parse(); err != nil {
-		Usage(parser)
+		printUsage(parser)
 	}
 
 	if options.Version {
-		Version()
+		printVersion()
 	}
 
 	if options.Database == "" {
-		options.Database = DATABASE
+		options.Database = Database
 	}
 
 	if options.List {
@@ -118,7 +120,7 @@ func CLIRun(f func(options *Options)) {
 	}
 
 	if options.Interface == "" {
-		Usage(parser)
+		printUsage(parser)
 	}
 
 	if options.Daemon {
