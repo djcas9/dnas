@@ -30,7 +30,7 @@ type Answer struct {
 	Active    bool      `json:"active"`
 }
 
-// Message used to pas and process data for various output options
+// Message is used to pass and process data for various output options
 type Message struct {
 	DNS struct {
 		Answers  []Answer `json:"answers"`
