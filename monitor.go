@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
@@ -91,6 +92,19 @@ func Monitor(options *Options) {
 		chuser(options.User)
 	}
 
+	var mysql bool = false
+	var db *sql.DB
+
+	if options.Mysql != "" {
+		mysql = true
+
+		db, err = MysqlConnect(options.Mysql)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	for pkt, r := h.NextEx(); r >= 0; pkt, r = h.NextEx() {
 
 		if r == 0 {
@@ -114,6 +128,11 @@ func Monitor(options *Options) {
 			}
 
 			go WriteToDatabase(message, options)
+
+			if mysql {
+				go message.ToMysql(db, options)
+			}
+
 			message.ToStdout(options)
 		}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/AndreasBriese/bloom"
 	"github.com/boltdb/bolt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/karlbunch/tablewriter"
 	"github.com/mgutz/ansi"
 )
@@ -31,6 +33,24 @@ var (
 type Value struct {
 	Answers []Answer
 	Bloom   []byte
+}
+
+func MysqlConnect(options string) (db *sql.DB, err error) {
+	db, err = sql.Open("mysql", options)
+
+	if err != nil {
+		return db, err
+	}
+
+	defer db.Close()
+
+	err = db.Ping()
+
+	if err != nil {
+		return db, err
+	}
+
+	return db, nil
 }
 
 // EncodeDNS encode the Value struct for storage in the database.
@@ -108,6 +128,11 @@ func prettyPrint(question string, a Value, count int) {
 
 	table.Render()
 	fmt.Printf("\n")
+}
+
+func (message *Message) ToMysql(db *sql.DB, options *Options) (err error) {
+	fmt.Println(db)
+	return nil
 }
 
 // ToKVDB write data to key/value database
