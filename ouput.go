@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 
-	"github.com/boltdb/bolt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/karlbunch/tablewriter"
 	"github.com/mgutz/ansi"
@@ -129,50 +126,6 @@ func MysqlConnect(options *Options) (db *sql.DB, err error) {
 	// CREATE TABLE questions (id INT);
 
 	return db, nil
-}
-
-// EncodeDNS encode the Value struct for storage in the database.
-func EncodeDNS(data Value) (buff bytes.Buffer, err error) {
-	var buf bytes.Buffer
-
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(data)
-
-	if err != nil {
-		return buf, err
-	}
-
-	return buf, nil
-}
-
-// DecodeDNS decode the Value struct from the database
-func DecodeDNS(data []byte) (buff Value, err error) {
-	var a Value
-	enc := gob.NewDecoder(bytes.NewReader(data))
-	eerr := enc.Decode(&a)
-
-	if eerr != nil {
-		return a, eerr
-	}
-
-	return a, nil
-}
-
-// MakeDB create or open an existing database file
-func MakeDB(path string) (db *bolt.DB, err error) {
-	db, err = bolt.Open(path, 0644, nil)
-
-	return db, err
-}
-
-func contains(m Answer, list []Answer) int {
-	for i, b := range list {
-		if b.Record == m.Record && b.Name == m.Name && b.Data == m.Data {
-			return i
-		}
-	}
-
-	return -1
 }
 
 func prettyPrint(question string, a Value, count int) {
