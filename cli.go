@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
+
+	"code.google.com/p/gopass"
 
 	"github.com/sevlyar/go-daemon"
 	"github.com/visionmedia/go-flags"
@@ -46,19 +47,21 @@ func chuser(username string) (uid, gid int) {
 
 // Options cli command options
 type Options struct {
-	Interface    string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
-	Port         int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
-	Database     string `short:"d" long:"database" description:"Database file path" value-name:"FILE"`
-	Mysql        string `short:"m" long:"mysql" description:"Mysql Data Source Name Example: user:password@/dbname" value-name:"STRING"`
-	Filter       string `short:"F" long:"filter" description:"Filter by question" default:"" value-name:"*.com"`
-	Daemon       bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
-	Write        string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
-	User         string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
-	Hexdump      bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
-	FindQuestion string `short:"q" long:"find-question" description:"Search for DNS records by question" value-name:"REGEXP"`
-	FindAnswer   string `short:"a" long:"find-answer" description:"Search for DNS records by answer data" value-name:"STRING"`
-	List         bool   `short:"l" long:"list" description:"List all seen DNS questions"`
-	Version      bool   `short:"v" long:"version" description:"Show version information"`
+	Interface string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
+	Port      int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
+	Daemon    bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
+	Write     string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
+	User      string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
+	Hexdump   bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
+
+	Mysql         bool   `short:"m" long:"mysql" description:"Enable Mysql Output Support" value-name:"PASSWORD"`
+	MysqlUser     string `long:"mysql-user" description:"Mysql User" value-name:"root"`
+	MysqlPassword string `long:"mysql-password" description:"Mysql Password" value-name:"PASSWORD"`
+	MysqlDatabase string `long:"mysql-database" description:"Mysql Database" value-name:"dnas"`
+	MysqlHost     string `long:"mysql-host" description:"Mysql Host" value-name:"127.0.0.1"`
+	MysqlPort     string `long:"mysql-port" description:"Mysql Port" value-name:"3306"`
+
+	Version bool `short:"v" long:"version" description:"Show version information"`
 }
 
 func printUsage(p *flags.Parser) {
@@ -98,26 +101,33 @@ func CLIRun(f func(options *Options)) {
 		printVersion()
 	}
 
-	if options.Database == "" {
-		options.Database = Database
+	if options.Mysql {
+		if options.MysqlPassword == "" {
+			password, err := gopass.GetPass("MySQL Password: ")
+
+			if err != nil {
+				panic(err)
+			}
+
+			options.MysqlPassword = password
+		}
 	}
 
-	if options.List {
-		listAllQuestions(options.Database)
-		os.Exit(1)
-	} else if options.FindQuestion != "" {
-		r, err := regexp.Compile(options.FindQuestion)
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
+	if options.MysqlHost != "" {
+		options.MysqlHost = "tcp(" + options.MysqlHost + ":"
+		if options.MysqlPort == "" {
+			options.MysqlPort = "3306"
 		}
 
-		findByQuestion(options.Database, r)
-		os.Exit(1)
-	} else if options.FindAnswer != "" {
-		findByAnswer(options.Database, []byte(options.FindAnswer))
-		os.Exit(1)
+		options.MysqlHost = options.MysqlHost + options.MysqlPort + ")"
+	}
+
+	if options.MysqlUser == "" {
+		options.MysqlUser = "root"
+	}
+
+	if options.MysqlDatabase == "" {
+		options.MysqlDatabase = "dnas"
 	}
 
 	if options.Interface == "" {

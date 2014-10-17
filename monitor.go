@@ -37,15 +37,6 @@ func WriteToFile(fo *os.File, json []byte) {
 	}
 }
 
-// WriteToDatabase write data to key/value database
-func WriteToDatabase(message *Message, options *Options) {
-	kverr := message.ToKVDB(options)
-
-	if kverr != nil {
-		// panic(lvlerr)
-	}
-}
-
 // Monitor bind and monitor for DNS packets. This will also
 // handle the various output methods.
 func Monitor(options *Options) {
@@ -92,15 +83,15 @@ func Monitor(options *Options) {
 		chuser(options.User)
 	}
 
-	var mysql bool = false
 	var db *sql.DB
 
-	if options.Mysql != "" {
-		mysql = true
-
-		db, err = MysqlConnect(options.Mysql)
+	if options.Mysql {
+		db, err = MysqlConnect(options)
 
 		if err != nil {
+
+			fmt.Println("WOORD!!")
+			fmt.Println(err.Error())
 			panic(err)
 		}
 	}
@@ -111,7 +102,7 @@ func Monitor(options *Options) {
 			continue
 		}
 
-		message, err := DNS(pkt, options.Filter)
+		message, err := DNS(pkt)
 
 		if err == nil {
 
@@ -127,9 +118,7 @@ func Monitor(options *Options) {
 				}()
 			}
 
-			go WriteToDatabase(message, options)
-
-			if mysql {
+			if options.Mysql {
 				go message.ToMysql(db, options)
 			}
 

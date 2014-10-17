@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -46,7 +45,7 @@ type Message struct {
 }
 
 // DNS process and parse DNS packets
-func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
+func DNS(pkt *pcap.Packet) (*Message, error) {
 	message := &Message{}
 
 	message.Timestamp = time.Now()
@@ -95,17 +94,6 @@ func DNS(pkt *pcap.Packet, filter string) (*Message, error) {
 
 	for i := range msg.Question {
 		message.DNS.Question = msg.Question[i].Name
-	}
-
-	if filter != "" {
-		r, _ := regexp.Compile(filter)
-
-		in := []byte(message.DNS.Question)
-		match := r.Match([]byte(in))
-
-		if !match {
-			return message, fmt.Errorf("Error: Question did not match filter.")
-		}
 	}
 
 	for i := range msg.Answer {

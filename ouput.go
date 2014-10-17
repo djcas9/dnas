@@ -8,11 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
-	"sort"
-	"time"
 
-	"github.com/AndreasBriese/bloom"
 	"github.com/boltdb/bolt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/karlbunch/tablewriter"
@@ -35,8 +31,15 @@ type Value struct {
 	Bloom   []byte
 }
 
-func MysqlConnect(options string) (db *sql.DB, err error) {
-	db, err = sql.Open("mysql", options)
+func MysqlConnect(options *Options) (db *sql.DB, err error) {
+
+	var connect string
+
+	connect = options.MysqlUser + ":" +
+		options.MysqlPassword + "@" + options.MysqlHost + "/" +
+		options.MysqlDatabase
+
+	db, err = sql.Open("mysql", connect)
 
 	if err != nil {
 		return db, err
@@ -49,6 +52,81 @@ func MysqlConnect(options string) (db *sql.DB, err error) {
 	if err != nil {
 		return db, err
 	}
+
+	checkQuestionTable := `SELECT COUNT(*)
+	FROM information_schema.tables 
+	WHERE table_schema = '` + options.MysqlDatabase + `' 
+	AND table_name = 'questions';`
+
+	checkAnswerTable := `SELECT COUNT(*)
+	FROM information_schema.tables 
+	WHERE table_schema = '` + options.MysqlDatabase + `' 
+	AND table_name = 'answers';`
+
+	var countQ int
+	var countA int
+
+	err = db.QueryRow(checkQuestionTable).Scan(&countQ)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = db.QueryRow(checkAnswerTable).Scan(&countA)
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(countQ, countA)
+
+	// var questionTable string
+	// var answerTable string
+	// var r *sql.Result
+
+	if countQ == 0 {
+		questionTable := `
+		CREATE TABLE ` + "`" + `questions` + "`" + ` (
+			` + "`" + `id` + "`" + ` int(11) unsigned NOT NULL AUTO_INCREMENT,
+			` + "`" + `packet` + "`" + ` text,
+			` + "`" + `dst_ip` + "`" + ` text,
+			` + "`" + `src_ip` + "`" + ` text,
+			` + "`" + `timestamp` + "`" + ` datetime DEFAULT NULL,
+			` + "`" + `protocol` + "`" + ` text,
+			PRIMARY KEY (` + "`" + `id` + "`" + `)
+		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+		`
+
+		_, err := db.Exec(questionTable)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if countA == 0 {
+		answerTable := `
+		CREATE TABLE ` + "`" + `answers` + "`" + ` (
+			` + "`" + `id` + "`" + ` int(11) unsigned NOT NULL AUTO_INCREMENT,
+			` + "`" + `question_id` + "`" + ` int(11) NOT NULL,
+			` + "`" + `name` + "`" + ` tinytext,
+			` + "`" + `record` + "`" + ` tinytext,
+			` + "`" + `data` + "`" + ` text,
+			` + "`" + `created_at` + "`" + ` datetime DEFAULT NULL,
+			` + "`" + `updated_at` + "`" + ` datetime DEFAULT NULL,
+			` + "`" + `active` + "`" + ` tinyint(1) NOT NULL,
+			PRIMARY KEY (` + "`" + `id` + "`" + `)
+		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+		`
+
+		_, err := db.Exec(answerTable)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// check for tables or create
+	// CREATE TABLE questions (id INT);
 
 	return db, nil
 }
@@ -133,218 +211,6 @@ func prettyPrint(question string, a Value, count int) {
 func (message *Message) ToMysql(db *sql.DB, options *Options) (err error) {
 	fmt.Println(db)
 	return nil
-}
-
-// ToKVDB write data to key/value database
-func (message *Message) ToKVDB(options *Options) (err error) {
-
-	db, dberr := MakeDB(options.Database)
-
-	defer db.Close()
-
-	if dberr != nil {
-		fmt.Println(dberr)
-		os.Exit(-1)
-	}
-
-	bf := bloom.New(float64(1<<16), float64(0.01))
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists(dbname)
-
-		if err != nil {
-			return err
-		}
-
-		data := bucket.Get([]byte(message.DNS.Question))
-
-		if data != nil {
-
-			// Update Records
-
-			a, _ := DecodeDNS(data)
-
-			for _, aa := range message.DNS.Answers {
-				index := contains(aa, a.Answers)
-
-				if index != -1 {
-					// Update
-					// fmt.Println("UPDATE RECORD!!!!", index)
-					a.Answers[index].Active = true
-					a.Answers[index].UpdatedAt = time.Now()
-				} else {
-					// Add New
-					// fmt.Println("ADD NEW!!!!!", index)
-					a.Answers = append(a.Answers, aa)
-				}
-			}
-
-			for i, dr := range a.Answers {
-				index := contains(dr, message.DNS.Answers)
-
-				a.Answers[i].UpdatedAt = time.Now()
-
-				if index == -1 {
-					a.Answers[i].Active = false
-				} else {
-					a.Answers[i].Active = true
-				}
-
-				bf.Add([]byte(a.Answers[i].Data))
-			}
-
-			a.Bloom = bf.JSONMarshal()
-
-			buf, _ := EncodeDNS(a)
-			err = bucket.Put([]byte(message.DNS.Question), buf.Bytes())
-
-			if err != nil {
-				return err
-			}
-
-		} else {
-
-			val := Value{Answers: message.DNS.Answers, Bloom: message.Bloom}
-
-			buf, _ := EncodeDNS(val)
-
-			err = bucket.Put([]byte(message.DNS.Question), buf.Bytes())
-
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-
-	return err
-}
-
-func findByQuestion(database string, r *regexp.Regexp) {
-
-	fmt.Printf("\n")
-	var qcount int
-	db, dberr := MakeDB(database)
-
-	defer db.Close()
-
-	if dberr != nil {
-		fmt.Println(dberr)
-		os.Exit(-1)
-	}
-
-	db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(dbname)
-
-		if bucket == nil {
-			return fmt.Errorf("Bucket %q not found!", dbname)
-		}
-
-		bucket.ForEach(func(key, data []byte) error {
-
-			if !r.Match(key) {
-				return nil
-			}
-
-			a, _ := DecodeDNS(data)
-
-			qcount++
-			prettyPrint(string(key), a, qcount)
-
-			return nil
-		})
-
-		return nil
-	})
-}
-
-func findByAnswer(database string, find []byte) {
-
-	fmt.Printf("\n")
-	var acount int
-	db, dberr := MakeDB(database)
-
-	defer db.Close()
-
-	if dberr != nil {
-		fmt.Println(dberr)
-		os.Exit(-1)
-	}
-
-	db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(dbname)
-
-		if bucket == nil {
-			return fmt.Errorf("Bucket %q not found!", dbname)
-		}
-
-		bucket.ForEach(func(key, data []byte) error {
-
-			a, _ := DecodeDNS(data)
-			bf := bloom.JSONUnmarshal(a.Bloom)
-
-			if len(a.Bloom) > 0 {
-				if bf.Has(find) {
-					acount++
-					prettyPrint(string(key), a, acount)
-				}
-			}
-
-			return nil
-		})
-
-		return nil
-	})
-}
-
-func listAllQuestions(database string) {
-	list := make(map[string]int)
-	var count int
-	var keys []string
-
-	db, dberr := MakeDB(database)
-
-	defer db.Close()
-
-	if dberr != nil {
-		fmt.Println(dberr)
-		os.Exit(-1)
-	}
-
-	db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(dbname)
-
-		if bucket == nil {
-			return fmt.Errorf("Bucket %q not found!", dbname)
-		}
-
-		bucket.ForEach(func(key, data []byte) error {
-			a, _ := DecodeDNS(data)
-
-			keyValue := string(key)
-			length := len(a.Answers)
-
-			keys = append(keys, keyValue)
-			list[keyValue] = length
-
-			return nil
-		})
-
-		sort.Strings(keys)
-
-		fmt.Printf("\n Questions:\n\n")
-
-		for _, value := range keys {
-			count = count + list[value]
-			fmt.Printf(" * %s (\033[0;32;49m%d\033[0m)\n", value, list[value])
-		}
-
-		fmt.Printf("\n Questions: %d", len(keys))
-		fmt.Printf("\n   Answers: %d\n\n", count)
-
-		return nil
-	})
 }
 
 // ToStdout write data to standard out
