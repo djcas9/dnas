@@ -36,6 +36,14 @@ func MysqlConnect(options *Options) (db *sql.DB, err error) {
 		options.MysqlPassword + "@" + options.MysqlHost + "/" +
 		options.MysqlDatabase
 
+	if options.MysqlTLS {
+		if options.MysqlSkipVerify {
+			connect += "?tls=skip-verify"
+		} else {
+			connect += "?tls=true"
+		}
+	}
+
 	db, err = sql.Open("mysql", connect)
 
 	if err != nil {
@@ -74,8 +82,6 @@ func MysqlConnect(options *Options) (db *sql.DB, err error) {
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(countQ, countA)
 
 	// var questionTable string
 	// var answerTable string
@@ -163,7 +169,6 @@ func prettyPrint(question string, a Value, count int) {
 }
 
 func (message *Message) ToMysql(db *sql.DB, options *Options) (err error) {
-	fmt.Println(db)
 
 	_, err = db.Exec("INSERT INTO questions (question, packet, src_ip, dst_ip, timestamp, protocol) VALUES (?, ?, ?, ?, ?, ?);",
 		message.DNS.Question, message.Packet, message.SrcIP, message.DstIP, message.Timestamp, message.Protocol)
