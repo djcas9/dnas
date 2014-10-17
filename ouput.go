@@ -8,7 +8,6 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gogits/gogs/modules/log"
 	"github.com/karlbunch/tablewriter"
 	"github.com/mgutz/ansi"
 )
@@ -166,11 +165,11 @@ func prettyPrint(question string, a Value, count int) {
 func (message *Message) ToMysql(db *sql.DB, options *Options) (err error) {
 	fmt.Println(db)
 
-	_, err = db.Exec("INSERT INTO questions (name, packet, src_ip, dst_ip, timestamp, protocol) VALUES (?, ?, ?, ?, ?, ?);",
+	_, err = db.Exec("INSERT INTO questions (question, packet, src_ip, dst_ip, timestamp, protocol) VALUES (?, ?, ?, ?, ?, ?);",
 		message.DNS.Question, message.Packet, message.SrcIP, message.DstIP, message.Timestamp, message.Protocol)
 
 	if err != nil {
-		log.Error(err.Error())
+		fmt.Println(err.Error())
 	}
 
 	for _, aa := range message.DNS.Answers {
@@ -179,7 +178,7 @@ func (message *Message) ToMysql(db *sql.DB, options *Options) (err error) {
 			1, aa.Name, aa.Record, aa.Data, aa.CreatedAt, aa.UpdatedAt, aa.Active)
 
 		if err != nil {
-			log.Error(err.Error())
+			fmt.Println(err.Error())
 		}
 	}
 
