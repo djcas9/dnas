@@ -8,6 +8,7 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gogits/gogs/modules/log"
 	"github.com/karlbunch/tablewriter"
 	"github.com/mgutz/ansi"
 )
@@ -42,7 +43,7 @@ func MysqlConnect(options *Options) (db *sql.DB, err error) {
 		return db, err
 	}
 
-	defer db.Close()
+	// defer db.Close()
 
 	err = db.Ping()
 
@@ -90,6 +91,7 @@ func MysqlConnect(options *Options) (db *sql.DB, err error) {
 			` + "`" + `src_ip` + "`" + ` text,
 			` + "`" + `timestamp` + "`" + ` datetime DEFAULT NULL,
 			` + "`" + `protocol` + "`" + ` text,
+			` + "`" + `name` + "`" + ` text,
 			PRIMARY KEY (` + "`" + `id` + "`" + `)
 		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 		`
@@ -163,6 +165,14 @@ func prettyPrint(question string, a Value, count int) {
 
 func (message *Message) ToMysql(db *sql.DB, options *Options) (err error) {
 	fmt.Println(db)
+
+	_, err = db.Exec("INSERT INTO questions (name, packet, src_ip, dst_ip, timestamp, protocol) VALUES (?, ?, ?, ?, ?, ?);",
+		message.DNS.Question, message.Packet, message.SrcIP, message.DstIP, message.Timestamp, message.Protocol)
+
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 	return nil
 }
 
