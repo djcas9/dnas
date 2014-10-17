@@ -91,7 +91,7 @@ func MysqlConnect(options *Options) (db *sql.DB, err error) {
 			` + "`" + `src_ip` + "`" + ` text,
 			` + "`" + `timestamp` + "`" + ` datetime DEFAULT NULL,
 			` + "`" + `protocol` + "`" + ` text,
-			` + "`" + `name` + "`" + ` text,
+			` + "`" + `question` + "`" + ` text,
 			PRIMARY KEY (` + "`" + `id` + "`" + `)
 		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 		`
@@ -171,6 +171,16 @@ func (message *Message) ToMysql(db *sql.DB, options *Options) (err error) {
 
 	if err != nil {
 		log.Error(err.Error())
+	}
+
+	for _, aa := range message.DNS.Answers {
+
+		_, err = db.Exec("INSERT INTO answers (question_id, name, record, data, created_at, updated_at, active) VALUES (?, ?, ?, ?, ?, ?, ?);",
+			1, aa.Name, aa.Record, aa.Data, aa.CreatedAt, aa.UpdatedAt, aa.Active)
+
+		if err != nil {
+			log.Error(err.Error())
+		}
 	}
 
 	return nil
