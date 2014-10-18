@@ -1,11 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/growse/pcap"
+	"github.com/jinzhu/gorm"
 )
 
 var (
@@ -83,7 +83,7 @@ func Monitor(options *Options) {
 		chuser(options.User)
 	}
 
-	var db *sql.DB
+	var db gorm.DB
 
 	if options.Mysql {
 		db, err = MysqlConnect(options)

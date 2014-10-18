@@ -47,22 +47,20 @@ func chuser(username string) (uid, gid int) {
 
 // Options cli command options
 type Options struct {
-	Interface string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
-	Port      int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
-	Daemon    bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
-	Write     string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
-	User      string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
-	Hexdump   bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
-
-	Mysql           bool   `short:"m" long:"mysql" description:"Enable Mysql Output Support" value-name:"PASSWORD"`
-	MysqlUser       string `long:"mysql-user" description:"Mysql User" value-name:"root"`
-	MysqlPassword   string `long:"mysql-password" description:"Mysql Password" value-name:"PASSWORD"`
-	MysqlDatabase   string `long:"mysql-database" description:"Mysql Database" value-name:"dnas"`
-	MysqlHost       string `long:"mysql-host" description:"Mysql Host" value-name:"127.0.0.1"`
-	MysqlPort       string `long:"mysql-port" description:"Mysql Port" value-name:"3306"`
-	MysqlTLS        bool   `long:"mysql-tls" description: "Enable TLS / SSL encrypted connection to the mysql server" value-name:"false"`
-	MysqlSkipVerify bool   `long:"mysql-skip-verify" description: "If you want to use a self-signed or invalid certificate (server side)." value-name:"false"`
-
+	Interface     string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
+	Port          int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
+	Daemon        bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
+	Write         string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
+	User          string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
+	Hexdump       bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
+	Mysql         bool   `short:"m" long:"mysql" description:"Enable Mysql Output Support" value-name:"PASSWORD"`
+	MysqlUser     string `long:"mysql-user" description:"Mysql User" value-name:"root"`
+	MysqlPassword string `long:"mysql-password" description:"Mysql Password" value-name:"PASSWORD"`
+	MysqlDatabase string `long:"mysql-database" description:"Mysql Database" value-name:"dnas"`
+	MysqlHost     string `long:"mysql-host" description:"Mysql Host" value-name:"127.0.0.1"`
+	MysqlPort     string `long:"mysql-port" description:"Mysql Port" value-name:"3306"`
+	// MysqlTLS        bool   `long:"mysql-tls" description: "Enable TLS / SSL encrypted connection to the mysql server" value-name:"false"`
+	// MysqlSkipVerify bool   `long:"mysql-skip-verify" description: "If you want to use a self-signed or invalid certificate" value-name:"false"`
 	Version bool `short:"v" long:"version" description:"Show version information"`
 }
 
@@ -116,7 +114,9 @@ func CLIRun(f func(options *Options)) {
 	}
 
 	if options.MysqlHost != "" {
+
 		options.MysqlHost = "tcp(" + options.MysqlHost + ":"
+
 		if options.MysqlPort == "" {
 			options.MysqlPort = "3306"
 		}

@@ -1,13 +1,13 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
 	"github.com/karlbunch/tablewriter"
 	"github.com/mgutz/ansi"
 )
@@ -22,13 +22,7 @@ var (
 	reset  = ansi.ColorCode("reset")
 )
 
-// Value holds the dns answers and bloom filter fior database storage
-type Value struct {
-	Answers []Answer
-	Bloom   []byte
-}
-
-func MysqlConnect(options *Options) (db *sql.DB, err error) {
+func MysqlConnect(options *Options) (db gorm.DB, err error) {
 
 	var connect string
 
@@ -36,122 +30,59 @@ func MysqlConnect(options *Options) (db *sql.DB, err error) {
 		options.MysqlPassword + "@" + options.MysqlHost + "/" +
 		options.MysqlDatabase
 
-	if options.MysqlTLS {
-		if options.MysqlSkipVerify {
-			connect += "?tls=skip-verify"
-		} else {
-			connect += "?tls=true"
-		}
-	}
+	// if options.MysqlTLS {
+	// if options.MysqlSkipVerify {
+	// connect += "?tls=skip-verify"
+	// } else {
+	// connect += "?tls=true"
+	// }
+	// }
 
-	db, err = sql.Open("mysql", connect)
+	db, err = gorm.Open("mysql", connect)
 
 	if err != nil {
 		return db, err
 	}
+
+	// Diable Logger
+	db.LogMode(false)
 
 	// defer db.Close()
 
-	err = db.Ping()
+	err = db.DB().Ping()
 
 	if err != nil {
 		return db, err
 	}
 
-	checkQuestionTable := `SELECT COUNT(*)
-	FROM information_schema.tables 
-	WHERE table_schema = '` + options.MysqlDatabase + `' 
-	AND table_name = 'questions';`
+	db.DB().SetMaxIdleConns(10)
+	db.DB().SetMaxOpenConns(100)
 
-	checkAnswerTable := `SELECT COUNT(*)
-	FROM information_schema.tables 
-	WHERE table_schema = '` + options.MysqlDatabase + `' 
-	AND table_name = 'answers';`
+	db.CreateTable(&Question{})
+	db.CreateTable(&Answer{})
 
-	var countQ int
-	var countA int
-
-	err = db.QueryRow(checkQuestionTable).Scan(&countQ)
-
-	if err != nil {
-		panic(err)
-	}
-
-	err = db.QueryRow(checkAnswerTable).Scan(&countA)
-
-	if err != nil {
-		panic(err)
-	}
-
-	// var questionTable string
-	// var answerTable string
-	// var r *sql.Result
-
-	if countQ == 0 {
-		questionTable := `
-		CREATE TABLE ` + "`" + `questions` + "`" + ` (
-			` + "`" + `id` + "`" + ` int(11) unsigned NOT NULL AUTO_INCREMENT,
-			` + "`" + `packet` + "`" + ` text,
-			` + "`" + `dst_ip` + "`" + ` text,
-			` + "`" + `src_ip` + "`" + ` text,
-			` + "`" + `timestamp` + "`" + ` datetime DEFAULT NULL,
-			` + "`" + `protocol` + "`" + ` text,
-			` + "`" + `question` + "`" + ` text,
-			PRIMARY KEY (` + "`" + `id` + "`" + `)
-		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-		`
-
-		_, err := db.Exec(questionTable)
-
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	if countA == 0 {
-		answerTable := `
-		CREATE TABLE ` + "`" + `answers` + "`" + ` (
-			` + "`" + `id` + "`" + ` int(11) unsigned NOT NULL AUTO_INCREMENT,
-			` + "`" + `question_id` + "`" + ` int(11) NOT NULL,
-			` + "`" + `name` + "`" + ` tinytext,
-			` + "`" + `record` + "`" + ` tinytext,
-			` + "`" + `data` + "`" + ` text,
-			` + "`" + `created_at` + "`" + ` datetime DEFAULT NULL,
-			` + "`" + `updated_at` + "`" + ` datetime DEFAULT NULL,
-			` + "`" + `active` + "`" + ` tinyint(1) NOT NULL,
-			PRIMARY KEY (` + "`" + `id` + "`" + `)
-		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-		`
-
-		_, err := db.Exec(answerTable)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	// check for tables or create
-	// CREATE TABLE questions (id INT);
+	db.AutoMigrate(&Question{}, &Answer{})
 
 	return db, nil
 }
 
-func prettyPrint(question string, a Value, count int) {
+func prettyPrint(message *Question, count int) {
 
 	fmt.Printf("---   %d   ---\n", count)
 
-	fmt.Printf("\nQuestion: \033[0;31;49m%s\033[0m\n\n", question)
+	fmt.Printf("\nQuestion: \033[0;31;49m%s\033[0m\n\n", message.Question)
 
-	fmt.Printf("\033[0;32;49mAnswers (%d):\033[0m\n\n", len(a.Answers))
+	fmt.Printf("\033[0;32;49mAnswers (%d):\033[0m\n\n", len(message.Answers))
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"RR", "Name", "Data", "Last Seen", "Active"})
 	// table.SetBorder(false)
 
-	for i, aa := range a.Answers {
+	for i, aa := range message.Answers {
 
 		active := green + "Yes" + reset
 
-		if !a.Answers[i].Active {
+		if !message.Answers[i].Active {
 			active = red + "No" + reset
 		}
 
@@ -168,44 +99,50 @@ func prettyPrint(question string, a Value, count int) {
 	fmt.Printf("\n")
 }
 
-func (message *Message) ToMysql(db *sql.DB, options *Options) (err error) {
+func (question *Question) ToMysql(db gorm.DB, options *Options) (err error) {
 
-	_, err = db.Exec("INSERT INTO questions (question, packet, src_ip, dst_ip, timestamp, protocol) VALUES (?, ?, ?, ?, ?, ?);",
-		message.DNS.Question, message.Packet, message.SrcIP, message.DstIP, message.Timestamp, message.Protocol)
+	// db.Create(question)
 
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+	db.FirstOrCreate(
+		question,
+		Question{SrcIp: question.SrcIp, DstIp: question.DstIp, Question: question.Question},
+	)
 
-	for _, aa := range message.DNS.Answers {
+	// _, err = db.Exec("INSERT INTO questions (question, packet, src_ip, dst_ip, timestamp, protocol) VALUES (?, ?, ?, ?, ?, ?);",
+	// message.Question, message.Packet, message.SrcIP, message.DstIP, message.Timestamp, message.Protocol)
 
-		_, err = db.Exec("INSERT INTO answers (question_id, name, record, data, created_at, updated_at, active) VALUES (?, ?, ?, ?, ?, ?, ?);",
-			1, aa.Name, aa.Record, aa.Data, aa.CreatedAt, aa.UpdatedAt, aa.Active)
+	// if err != nil {
+	// fmt.Println(err.Error())
+	// }
 
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-	}
+	// for _, aa := range message.Answers {
+
+	// _, err = db.Exec("INSERT INTO answers (question_id, name, record, data, created_at, updated_at, active) VALUES (?, ?, ?, ?, ?, ?, ?);",
+	// insertCount, aa.Name, aa.Record, aa.Data, aa.CreatedAt, aa.UpdatedAt, aa.Active)
+
+	// if err != nil {
+	// fmt.Println(err.Error())
+	// }
+	// }
 
 	return nil
 }
 
 // ToStdout write data to standard out
-func (message *Message) ToStdout(options *Options) {
+func (message *Question) ToStdout(options *Options) {
 
 	count++
 
-	val := Value{Answers: message.DNS.Answers, Bloom: message.Bloom}
-
-	prettyPrint(message.DNS.Question, val, count)
+	prettyPrint(message, count)
 
 	if options.Hexdump {
-		fmt.Printf("\033[0;32;49mHexdump:\033[0m\n\n%s\n", hex.Dump(message.Packet))
+		dump, _ := hex.DecodeString(message.Packet)
+		fmt.Printf("\033[0;32;49mHexdump:\033[0m\n\n%s\n", hex.Dump(dump))
 	}
 
 }
 
 // ToJSON convert Message struct to json
-func (message *Message) ToJSON() ([]byte, error) {
+func (message *Question) ToJSON() ([]byte, error) {
 	return json.Marshal(message)
 }
