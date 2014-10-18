@@ -11,7 +11,7 @@ const (
 	DatabasePath = ".dnas/dnas.db"
 
 	// Version application version number
-	Version = "0.1.0"
+	Version = "0.2.0"
 
 	// Database the default database file name
 	Database = "dnas.db"

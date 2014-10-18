@@ -32,6 +32,12 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
 
   `Example: sudo dnas -i en0 -H -u mephux`
 
+  Supports:
+    * sqlite3
+    * Mysql
+    * Postgres
+    * Json
+
   ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/dnas.gif)
 
 
@@ -40,56 +46,30 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
 ```
   DNAS (0.1.0) - Domain Name Analytics System
 
-    Usage: dnas [options]
+  Usage: dnas [options]
 
-    Options:
-      -i, --interface=eth0          Interface to monitor
-      -p, --port=53                 DNS port (53)
-      -d, --database=FILE           Database file path (dnas.db)
-      -F, --filter=*.com            Filter by question
-      -D, --daemon                  Run DNAS in daemon mode
-      -w, --write=FILE              Write JSON output to log file
-      -u, --user=USER               Drop privileges to this user
-      -H, --hexdump                 Show hexdump of DNS packet
-      -q, --find-question=REGEXP    Search for DNS record by question
-      -a, --find-answer=STRING      Search for DNS records by answer data
-      -l, --list                    List all seen DNS questions
-      -v, --version                 Show version information
+  Options:
+    -i, --interface=eth0          Interface to monitor
+    -p, --port=53                 DNS port (53)
+    -D, --daemon                  Run DNAS in daemon mode
+    -w, --write=FILE              Write JSON output to log file
+    -u, --user=USER               Drop privileges to this user
+    -H, --hexdump                 Show hexdump of DNS packet
+        --mysql                   Enable Mysql Output Support
+        --postgres                Enable Postgres Output Support
+        --sqlite3                 Enable Sqlite3 Output Support
+        --db-user=root            Database User (root)
+        --db-password=PASSWORD    Database Password
+        --db-database=dnas        Database Database (dnas)
+        --db-host=127.0.0.1       Database Host
+        --db-port=3306            Database Port
+        --db-path=~/.dnas.db      Path to Database on disk. (sqlite3 only)
+    -q, --quiet                   Suppress DNAS output
+    -v, --version                 Show version information
 
-    Help Options:
-      -h, --help                    Show this help message
+  Help Options:
+    -h, --help                    Show this help message
 ```
-
-## JSON Output
-
-  `Example: sudo dnas -i en0 -u mephux -w output.txt`
-
-  ```json
-  {
-    "dns": {
-      "answers": [
-        {
-          "class": "IN",
-          "name": "github.com.",
-          "record": "A",
-          "data": "192.30.252.130",
-          "ttl": "24",
-          "created_at": "2014-08-24T16:02:20.56537176-04:00",
-          "updated_at": "2014-08-24T16:02:20.565371798-04:00",
-          "active": true
-        }
-      ],
-      "question": "github.com.",
-      "length": 54
-    },
-    "dstip": "172.16.1.19",
-    "protocol": "UDP",
-    "srcip": "172.16.1.1",
-    "timestamp": "2014-08-24T16:02:20.565137019-04:00",
-    "packet": "xBaBgAABAAEAAAAABmdpdGh1YgNjb20AAAEAAQZnaXRodWIDY29tAAABAAEAAAAYAATAHvyC",
-    "bloom": "eyJGaWx0ZXJTZXQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQ0FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFnQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBSUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUNBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBZ0FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUlBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFDQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPT0iLCJTZXRMb2NzIjo3fQ=="
-  }
-  ```
 
 ## Self-Promotion
 
