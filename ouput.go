@@ -108,23 +108,6 @@ func (question *Question) ToMysql(db gorm.DB, options *Options) (err error) {
 		Question{SrcIp: question.SrcIp, DstIp: question.DstIp, Question: question.Question},
 	)
 
-	// _, err = db.Exec("INSERT INTO questions (question, packet, src_ip, dst_ip, timestamp, protocol) VALUES (?, ?, ?, ?, ?, ?);",
-	// message.Question, message.Packet, message.SrcIP, message.DstIP, message.Timestamp, message.Protocol)
-
-	// if err != nil {
-	// fmt.Println(err.Error())
-	// }
-
-	// for _, aa := range message.Answers {
-
-	// _, err = db.Exec("INSERT INTO answers (question_id, name, record, data, created_at, updated_at, active) VALUES (?, ?, ?, ?, ?, ?, ?);",
-	// insertCount, aa.Name, aa.Record, aa.Data, aa.CreatedAt, aa.UpdatedAt, aa.Active)
-
-	// if err != nil {
-	// fmt.Println(err.Error())
-	// }
-	// }
-
 	return nil
 }
 
