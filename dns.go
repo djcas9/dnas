@@ -35,7 +35,7 @@ type Answer struct {
 type Question struct {
 	Id        int64
 	SeenCount int64
-	Answers   []Answer `json:"answers" sql:"-"`
+	Answers   []Answer `json:"answers"`
 	Question  string   `json:"question"`
 	Length    int      `json:"length" sql:"-"`
 	DstIp     string   `json:"dstip"`
