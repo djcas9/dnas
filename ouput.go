@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -98,14 +97,16 @@ func prettyPrint(message *Question, count int) {
 
 func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
 
-	db.Where(
-		Question{
-			Protocol: question.Protocol,
-			SrcIp:    question.SrcIp,
-			DstIp:    question.DstIp,
-			Question: question.Question,
-		},
-	).Assign(Question{UpdatedAt: time.Now()}).FirstOrCreate(question)
+	db.Create(question)
+
+	// db.Where(
+	// Question{
+	// Protocol: question.Protocol,
+	// SrcIp:    question.SrcIp,
+	// DstIp:    question.DstIp,
+	// Question: question.Question,
+	// },
+	// ).Assign(Question{UpdatedAt: time.Now()}).FirstOrCreate(question)
 
 	return nil
 }
