@@ -66,8 +66,8 @@ func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 	db.DB().SetMaxIdleConns(10)
 	db.DB().SetMaxOpenConns(100)
 
-	db.DropTableIfExists(&Question{})
-	db.DropTableIfExists(&Answer{})
+	// db.DropTableIfExists(&Question{})
+	// db.DropTableIfExists(&Answer{})
 
 	if !db.HasTable(&Question{}) {
 		db.CreateTable(&Question{})
