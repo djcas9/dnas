@@ -28,18 +28,9 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
 
     * `vagrant up`
 
-## OUTPUT
+## Usage
 
   `Example: sudo dnas -i en0 -H -u mephux`
-
-  * Output Support:
-
-    * sqlite3
-    * Mysql
-    * Postgres
-    * Json
-
-## Usage
 
 ```
   DNAS (0.1.0) - Domain Name Analytics System
@@ -68,6 +59,14 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
   Help Options:
     -h, --help                    Show this help message
 ```
+
+## OUTPUT Support
+
+    * sqlite3
+    * Mysql
+    * Postgres
+    * Json
+
 
 ## Self-Promotion
 
