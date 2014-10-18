@@ -33,13 +33,13 @@ func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 		options.DbPassword + "@" + options.DbHost + "/" +
 		options.DbDatabase
 
-	// if options.DbTls {
-	// if options.DbSkipVerify {
-	// connect = connect + "?tls=skip-verify"
-	// } else {
-	// connect = connect + "?tls=true"
-	// }
-	// }
+	if options.DbTls {
+		if options.DbSkipVerify {
+			connect = connect + "?tls=skip-verify"
+		} else {
+			connect = connect + "?tls=true"
+		}
+	}
 
 	db, err = gorm.Open("mysql", connect)
 
@@ -48,7 +48,11 @@ func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 	}
 
 	// Diable Logger
-	db.LogMode(true)
+	if options.Quiet {
+		db.LogMode(false)
+	} else {
+		db.LogMode(options.DatabaseOutput)
+	}
 
 	// defer db.Close()
 
@@ -61,8 +65,13 @@ func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 	db.DB().SetMaxIdleConns(10)
 	db.DB().SetMaxOpenConns(100)
 
-	db.CreateTable(&Question{})
-	db.CreateTable(&Answer{})
+	if !db.HasTable(&Question{}) {
+		db.CreateTable(&Question{})
+	}
+
+	if !db.HasTable(&Answer{}) {
+		db.CreateTable(&Answer{})
+	}
 
 	db.AutoMigrate(&Question{}, &Answer{})
 

@@ -58,15 +58,15 @@ type Options struct {
 	Postgres bool `long:"postgres" description:"Enable Postgres Output Support"`
 	Sqlite3  bool `long:"sqlite3" description:"Enable Sqlite3 Output Support"`
 
-	DbUser     string `long:"db-user" description:"Database User" value-name:"root"`
-	DbPassword string `long:"db-password" description:"Database Password" value-name:"PASSWORD"`
-	DbDatabase string `long:"db-database" description:"Database Database" value-name:"dnas"`
-	DbHost     string `long:"db-host" description:"Database Host" value-name:"127.0.0.1"`
-	DbPort     string `long:"db-port" description:"Database Port" value-name:"3306"`
-	DbPath     string `long:"db-path" description:"Path to Database on disk. (sqlite3 only)" value-name:"~/.dnas.db"`
-
-	// DbTls        bool `long:"db-tls" description: "Enable TLS / SSL encrypted connection to the database. (mysql/postgres only)" value-name:"false"`
-	// DbSkipVerify bool `long:"db-skip-verify" description: "Allow Self-signed or invalid certificate (mysql/postgres only)" value-name:"false"`
+	DbUser         string `long:"db-user" description:"Database User" value-name:"root"`
+	DbPassword     string `long:"db-password" description:"Database Password" value-name:"PASSWORD"`
+	DbDatabase     string `long:"db-database" description:"Database Database" value-name:"dnas"`
+	DbHost         string `long:"db-host" description:"Database Host" value-name:"127.0.0.1"`
+	DbPort         string `long:"db-port" description:"Database Port" value-name:"3306"`
+	DbPath         string `long:"db-path" description:"Path to Database on disk. (sqlite3 only)" value-name:"~/.dnas.db"`
+	DbTls          bool   `long:"db-tls" description:"Enable TLS / SSL encrypted connection to the database. (mysql/postgres only)" value-name:"false"`
+	DbSkipVerify   bool   `long:"db-skip-verify" description:"Allow Self-signed or invalid certificate (mysql/postgres only)" value-name:"false"`
+	DatabaseOutput bool   `long:"db-verbose" description:"Show database logs in STDOUT"`
 
 	Quiet   bool `short:"q" long:"quiet" description:"Suppress DNAS output"`
 	Version bool `short:"v" long:"version" description:"Show version information"`

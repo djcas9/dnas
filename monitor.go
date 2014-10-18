@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 
 	"github.com/growse/pcap"
 	"github.com/jinzhu/gorm"
@@ -41,15 +42,17 @@ func WriteToFile(fo *os.File, json []byte) {
 // handle the various output methods.
 func Monitor(options *Options) {
 
-	fmt.Printf("\n %s (%s) - %s\n",
-		Name,
-		Version,
-		Description,
-	)
+	if !options.Quiet {
+		fmt.Printf("\n %s (%s) - %s\n",
+			Name,
+			Version,
+			Description,
+		)
 
-	hostname, _ := os.Hostname()
+		hostname, _ := os.Hostname()
 
-	fmt.Printf(" Host: %s\n\n", hostname)
+		fmt.Printf(" Host: %s\n\n", hostname)
+	}
 
 	expr := fmt.Sprintf("port %d", options.Port)
 
@@ -96,6 +99,17 @@ func Monitor(options *Options) {
 		}
 	}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			db.Close()
+			file.Close()
+			fmt.Println(sig)
+			os.Exit(1)
+		}
+	}()
+
 	for pkt, r := h.NextEx(); r >= 0; pkt, r = h.NextEx() {
 
 		if r == 0 {
@@ -122,10 +136,8 @@ func Monitor(options *Options) {
 				go message.ToDatabase(db, options)
 			}
 
-			if !options.Daemon {
-				if !options.Quiet {
-					message.ToStdout(options)
-				}
+			if !options.Quiet {
+				message.ToStdout(options)
 			}
 		}
 

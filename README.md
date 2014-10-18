@@ -33,7 +33,7 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
   `Example: sudo dnas -i en0 -H -u mephux`
 
 ```
-  DNAS (0.1.0) - Domain Name Analytics System
+  DNAS (0.2.0) - Domain Name Analytics System
 
   Usage: dnas [options]
 
@@ -53,6 +53,9 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
         --db-host=127.0.0.1       Database Host
         --db-port=3306            Database Port
         --db-path=~/.dnas.db      Path to Database on disk. (sqlite3 only)
+        --db-tls                  Enable TLS / SSL encrypted connection to the database. (mysql/postgres only)
+        --db-skip-verify          Allow Self-signed or invalid certificate (mysql/postgres only)
+        --db-verbose              Show database logs in STDOUT
     -q, --quiet                   Suppress DNAS output
     -v, --version                 Show version information
 
