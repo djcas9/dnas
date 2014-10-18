@@ -118,6 +118,8 @@ func CLIRun(f func(options *Options)) {
 			}
 
 			options.DbPassword = password
+		} else if options.DbPassword == "none" {
+			options.DbPassword = ""
 		}
 	}
 

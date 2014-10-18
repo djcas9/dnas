@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -65,6 +66,9 @@ func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 	db.DB().SetMaxIdleConns(10)
 	db.DB().SetMaxOpenConns(100)
 
+	db.DropTableIfExists(&Question{})
+	db.DropTableIfExists(&Answer{})
+
 	if !db.HasTable(&Question{}) {
 		db.CreateTable(&Question{})
 	}
@@ -105,17 +109,30 @@ func prettyPrint(message *Question, count int) {
 }
 
 func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
+	var q Question
 
-	db.Create(question)
+	db.Where(
+		&Question{
+			SrcIp:    question.SrcIp,
+			DstIp:    question.DstIp,
+			Question: question.Question,
+		},
+	).First(&q)
 
-	// db.Where(
-	// Question{
-	// Protocol: question.Protocol,
-	// SrcIp:    question.SrcIp,
-	// DstIp:    question.DstIp,
-	// Question: question.Question,
-	// },
-	// ).Assign(Question{UpdatedAt: time.Now()}).FirstOrCreate(question)
+	if q.Id != 0 {
+
+		db.Model(&q).Update(
+			&Question{
+				UpdatedAt: time.Now().Unix(),
+				SeenCount: q.SeenCount + 1,
+			},
+		)
+
+	} else {
+		question.SeenCount = 1
+		question.CreatedAt = time.Now().Unix()
+		db.Table("questions").Create(question)
+	}
 
 	return nil
 }

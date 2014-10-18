@@ -34,15 +34,16 @@ type Answer struct {
 // Message is used to pass and process data for various output options
 type Question struct {
 	Id        int64
-	Answers   []Answer  `json:"answers"`
-	Question  string    `json:"question"`
-	Length    int       `json:"length"`
-	DstIp     string    `json:"dstip"`
-	Protocol  string    `json:"protocol"`
-	SrcIp     string    `json:"srcip"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Packet    string    `json:"packet"`
+	SeenCount int64
+	Answers   []Answer `json:"answers" sql:"-"`
+	Question  string   `json:"question"`
+	Length    int      `json:"length" sql:"-"`
+	DstIp     string   `json:"dstip"`
+	Protocol  string   `json:"protocol" sql:"-"`
+	SrcIp     string   `json:"srcip"`
+	CreatedAt int64    `json:"created_at"`
+	UpdatedAt int64    `json:"updated_at"`
+	Packet    string   `json:"packet" sql:"-"`
 }
 
 // DNS process and parse DNS packets

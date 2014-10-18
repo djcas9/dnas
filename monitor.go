@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 
 	"github.com/growse/pcap"
 	"github.com/jinzhu/gorm"
@@ -41,6 +42,8 @@ func WriteToFile(fo *os.File, json []byte) {
 // Monitor bind and monitor for DNS packets. This will also
 // handle the various output methods.
 func Monitor(options *Options) {
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	if !options.Quiet {
 		fmt.Printf("\n %s (%s) - %s\n",
@@ -93,19 +96,26 @@ func Monitor(options *Options) {
 
 		if err != nil {
 
-			fmt.Println("WOORD!!")
 			fmt.Println(err.Error())
 			panic(err)
 		}
 	}
 
+	queue := make(chan *Question)
+
+	go func() {
+		for elem := range queue {
+			elem.ToDatabase(db, options)
+		}
+	}()
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
-		for sig := range c {
+		for _ = range c {
 			db.Close()
 			file.Close()
-			fmt.Println(sig)
+			close(queue)
 			os.Exit(1)
 		}
 	}()
@@ -133,7 +143,8 @@ func Monitor(options *Options) {
 			}
 
 			if options.Mysql {
-				go message.ToDatabase(db, options)
+				// go message.ToDatabase(db, options)
+				queue <- message
 			}
 
 			if !options.Quiet {
