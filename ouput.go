@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/jinzhu/gorm"
 	"github.com/karlbunch/tablewriter"
 	"github.com/mgutz/ansi"
@@ -22,19 +26,19 @@ var (
 	reset  = ansi.ColorCode("reset")
 )
 
-func MysqlConnect(options *Options) (db gorm.DB, err error) {
+func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 
 	var connect string
 
-	connect = options.MysqlUser + ":" +
-		options.MysqlPassword + "@" + options.MysqlHost + "/" +
-		options.MysqlDatabase
+	connect = options.DbUser + ":" +
+		options.DbPassword + "@" + options.DbHost + "/" +
+		options.DbDatabase
 
-	// if options.MysqlTLS {
-	// if options.MysqlSkipVerify {
-	// connect += "?tls=skip-verify"
+	// if options.DbTls {
+	// if options.DbSkipVerify {
+	// connect = connect + "?tls=skip-verify"
 	// } else {
-	// connect += "?tls=true"
+	// connect = connect + "?tls=true"
 	// }
 	// }
 
@@ -45,7 +49,7 @@ func MysqlConnect(options *Options) (db gorm.DB, err error) {
 	}
 
 	// Diable Logger
-	db.LogMode(false)
+	db.LogMode(true)
 
 	// defer db.Close()
 
@@ -75,23 +79,16 @@ func prettyPrint(message *Question, count int) {
 	fmt.Printf("\033[0;32;49mAnswers (%d):\033[0m\n\n", len(message.Answers))
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"RR", "Name", "Data", "Last Seen", "Active"})
+	table.SetHeader([]string{"RR", "Name", "Data", "Last Seen"})
 	// table.SetBorder(false)
 
-	for i, aa := range message.Answers {
-
-		active := green + "Yes" + reset
-
-		if !message.Answers[i].Active {
-			active = red + "No" + reset
-		}
+	for _, aa := range message.Answers {
 
 		table.Append([]string{
 			aa.Record,
 			aa.Name,
 			lime + aa.Data + reset,
 			aa.UpdatedAt.Format(layout),
-			active,
 		})
 	}
 
@@ -99,14 +96,16 @@ func prettyPrint(message *Question, count int) {
 	fmt.Printf("\n")
 }
 
-func (question *Question) ToMysql(db gorm.DB, options *Options) (err error) {
+func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
 
-	// db.Create(question)
-
-	db.FirstOrCreate(
-		question,
-		Question{SrcIp: question.SrcIp, DstIp: question.DstIp, Question: question.Question},
-	)
+	db.Where(
+		Question{
+			Protocol: question.Protocol,
+			SrcIp:    question.SrcIp,
+			DstIp:    question.DstIp,
+			Question: question.Question,
+		},
+	).Assign(Question{UpdatedAt: time.Now()}).FirstOrCreate(question)
 
 	return nil
 }

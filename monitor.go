@@ -86,7 +86,7 @@ func Monitor(options *Options) {
 	var db gorm.DB
 
 	if options.Mysql {
-		db, err = MysqlConnect(options)
+		db, err = DatabaseConnect(options)
 
 		if err != nil {
 
@@ -119,10 +119,14 @@ func Monitor(options *Options) {
 			}
 
 			if options.Mysql {
-				go message.ToMysql(db, options)
+				go message.ToDatabase(db, options)
 			}
 
-			message.ToStdout(options)
+			if !options.Daemon {
+				if !options.Quiet {
+					message.ToStdout(options)
+				}
+			}
 		}
 
 	}

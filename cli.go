@@ -47,20 +47,28 @@ func chuser(username string) (uid, gid int) {
 
 // Options cli command options
 type Options struct {
-	Interface     string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
-	Port          int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
-	Daemon        bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
-	Write         string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
-	User          string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
-	Hexdump       bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
-	Mysql         bool   `short:"m" long:"mysql" description:"Enable Mysql Output Support" value-name:"PASSWORD"`
-	MysqlUser     string `long:"mysql-user" description:"Mysql User" value-name:"root"`
-	MysqlPassword string `long:"mysql-password" description:"Mysql Password" value-name:"PASSWORD"`
-	MysqlDatabase string `long:"mysql-database" description:"Mysql Database" value-name:"dnas"`
-	MysqlHost     string `long:"mysql-host" description:"Mysql Host" value-name:"127.0.0.1"`
-	MysqlPort     string `long:"mysql-port" description:"Mysql Port" value-name:"3306"`
-	// MysqlTLS        bool   `long:"mysql-tls" description: "Enable TLS / SSL encrypted connection to the mysql server" value-name:"false"`
-	// MysqlSkipVerify bool   `long:"mysql-skip-verify" description: "If you want to use a self-signed or invalid certificate" value-name:"false"`
+	Interface string `short:"i" long:"interface" description:"Interface to monitor" value-name:"eth0"`
+	Port      int    `short:"p" long:"port" description:"DNS port" default:"53" value-name:"53"`
+	Daemon    bool   `short:"D" long:"daemon" description:"Run DNAS in daemon mode"`
+	Write     string `short:"w" long:"write" description:"Write JSON output to log file" value-name:"FILE"`
+	User      string `short:"u" long:"user" description:"Drop privileges to this user" value-name:"USER"`
+	Hexdump   bool   `short:"H" long:"hexdump" description:"Show hexdump of DNS packet"`
+
+	Mysql    bool `long:"mysql" description:"Enable Mysql Output Support"`
+	Postgres bool `long:"postgres" description:"Enable Postgres Output Support"`
+	Sqlite3  bool `long:"sqlite3" description:"Enable Sqlite3 Output Support"`
+
+	DbUser     string `long:"db-user" description:"Database User" value-name:"root"`
+	DbPassword string `long:"db-password" description:"Database Password" value-name:"PASSWORD"`
+	DbDatabase string `long:"db-database" description:"Database Database" value-name:"dnas"`
+	DbHost     string `long:"db-host" description:"Database Host" value-name:"127.0.0.1"`
+	DbPort     string `long:"db-port" description:"Database Port" value-name:"3306"`
+	DbPath     string `long:"db-path" description:"Path to Database on disk. (sqlite3 only)" value-name:"~/.dnas.db"`
+
+	// DbTls        bool `long:"db-tls" description: "Enable TLS / SSL encrypted connection to the database. (mysql/postgres only)" value-name:"false"`
+	// DbSkipVerify bool `long:"db-skip-verify" description: "Allow Self-signed or invalid certificate (mysql/postgres only)" value-name:"false"`
+
+	Quiet   bool `short:"q" long:"quiet" description:"Suppress DNAS output"`
 	Version bool `short:"v" long:"version" description:"Show version information"`
 }
 
@@ -102,34 +110,34 @@ func CLIRun(f func(options *Options)) {
 	}
 
 	if options.Mysql {
-		if options.MysqlPassword == "" {
-			password, err := gopass.GetPass("MySQL Password: ")
+		if options.DbPassword == "" {
+			password, err := gopass.GetPass("Database Password: ")
 
 			if err != nil {
 				panic(err)
 			}
 
-			options.MysqlPassword = password
+			options.DbPassword = password
 		}
 	}
 
-	if options.MysqlHost != "" {
+	if options.DbHost != "" {
 
-		options.MysqlHost = "tcp(" + options.MysqlHost + ":"
+		options.DbHost = "tcp(" + options.DbHost + ":"
 
-		if options.MysqlPort == "" {
-			options.MysqlPort = "3306"
+		if options.DbPort == "" {
+			options.DbPort = "3306"
 		}
 
-		options.MysqlHost = options.MysqlHost + options.MysqlPort + ")"
+		options.DbHost = options.DbHost + options.DbPort + ")"
 	}
 
-	if options.MysqlUser == "" {
-		options.MysqlUser = "root"
+	if options.DbUser == "" {
+		options.DbUser = "root"
 	}
 
-	if options.MysqlDatabase == "" {
-		options.MysqlDatabase = "dnas"
+	if options.DbDatabase == "" {
+		options.DbDatabase = "dnas"
 	}
 
 	if options.Interface == "" {

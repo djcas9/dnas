@@ -29,7 +29,6 @@ type Answer struct {
 	Ttl        string    `json:"ttl"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
-	Active     bool      `json:"active"`
 }
 
 // Message is used to pass and process data for various output options
@@ -41,15 +40,14 @@ type Question struct {
 	DstIp     string    `json:"dstip"`
 	Protocol  string    `json:"protocol"`
 	SrcIp     string    `json:"srcip"`
-	Timestamp time.Time `json:"timestamp"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 	Packet    string    `json:"packet"`
 }
 
 // DNS process and parse DNS packets
 func DNS(pkt *pcap.Packet) (*Question, error) {
 	message := &Question{}
-
-	message.Timestamp = time.Now()
 
 	pkt.Decode()
 	msg := new(dns.Msg)
@@ -100,14 +98,11 @@ func DNS(pkt *pcap.Packet) (*Question, error) {
 	for i := range msg.Answer {
 		split := strings.Split(msg.Answer[i].String(), "\t")
 		answer := Answer{
-			Name:      split[0],
-			Ttl:       split[1],
-			Class:     split[2],
-			Record:    split[3],
-			Data:      split[4],
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			Active:    true,
+			Name:   split[0],
+			Ttl:    split[1],
+			Class:  split[2],
+			Record: split[3],
+			Data:   split[4],
 		}
 
 		message.Answers = append(message.Answers, answer)
