@@ -32,14 +32,12 @@ i.e malware blah.exe sent data to blah.org what ips did that resolve to at that 
 
   `Example: sudo dnas -i en0 -H -u mephux`
 
-  Supports:
+  * Output Support:
+
     * sqlite3
     * Mysql
     * Postgres
     * Json
-
-  ![dnas](https://raw.githubusercontent.com/mephux/dnas/master/dnas.gif)
-
 
 ## Usage
 
