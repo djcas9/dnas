@@ -109,7 +109,7 @@ func Monitor(options *Options) {
 		db, err = DatabaseConnect(options)
 
 		if err != nil {
-			fmt.Println(" Error: ", err.Error(), "\n")
+			fmt.Println("\n Error: ", err.Error(), "\n")
 			os.Exit(1)
 		}
 

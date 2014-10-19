@@ -114,12 +114,13 @@ func DNS(pkt *pcap.Packet, options *Options) (*Question, error) {
 	for i := range msg.Answer {
 		split := strings.Split(msg.Answer[i].String(), "\t")
 		answer := Answer{
-			Name:     split[0],
-			Ttl:      split[1],
-			Class:    split[2],
-			Record:   split[3],
-			Data:     split[4],
-			ClientId: options.Client.Id,
+			Name:      split[0],
+			Ttl:       split[1],
+			Class:     split[2],
+			Record:    split[3],
+			Data:      split[4],
+			ClientId:  options.Client.Id,
+			CreatedAt: time.Now(),
 		}
 
 		message.Answers = append(message.Answers, answer)

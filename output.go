@@ -155,6 +155,10 @@ func CreateClient(db gorm.DB, options *Options) (id int64) {
 	return c.Id
 }
 
+func msToTime(ms int64) (time.Time, error) {
+	return time.Unix(0, ms*int64(time.Millisecond)), nil
+}
+
 func prettyPrint(message *Question, count int) {
 
 	fmt.Printf("---   %d   ---\n", count)
