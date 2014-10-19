@@ -26,6 +26,12 @@ var (
 	reset  = ansi.ColorCode("reset")
 )
 
+func FlushDatabase(db gorm.DB) {
+	db.DropTableIfExists(&Question{})
+	db.DropTableIfExists(&Answer{})
+	db.DropTableIfExists(&Client{})
+}
+
 func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 	var connect string
 	var dbType string
@@ -86,21 +92,18 @@ func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 		db.LogMode(options.DatabaseOutput)
 	}
 
-	// defer db.Close()
-
 	err = db.DB().Ping()
 
 	if err != nil {
 		return db, err
 	}
 
+	if options.DbFlush {
+		FlushDatabase(db)
+	}
+
 	db.DB().SetMaxIdleConns(10)
 	db.DB().SetMaxOpenConns(100)
-
-	// keep commented - debug only
-	// db.DropTableIfExists(&Question{})
-	// db.DropTableIfExists(&Answer{})
-	// db.DropTableIfExists(&Client{})
 
 	if !db.HasTable(&Question{}) {
 		db.CreateTable(&Question{})

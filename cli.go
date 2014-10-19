@@ -60,13 +60,14 @@ type Options struct {
 	Postgres bool `long:"postgres" description:"Enable Postgres Output Support"`
 	Sqlite3  bool `long:"sqlite3" description:"Enable Sqlite3 Output Support"`
 
-	DbUser         string `long:"db-user" description:"Database User" value-name:"root"`
+	DbUser         string `long:"db-user" description:"Database User" value-name:"root" default:"root"`
 	DbPassword     string `long:"db-password" description:"Database Password" value-name:"PASSWORD"`
-	DbDatabase     string `long:"db-database" description:"Database Database" value-name:"dnas"`
-	DbHost         string `long:"db-host" description:"Database Host" value-name:"127.0.0.1"`
+	DbDatabase     string `long:"db-database" description:"Database Database" value-name:"dnas" default:"dnas"`
+	DbHost         string `long:"db-host" description:"Database Host" value-name:"localhost"`
 	DbPort         string `long:"db-port" description:"Database Port" value-name:"3306"`
 	DbPath         string `long:"db-path" description:"Path to Database on disk. (sqlite3 only)" default:"./dnas.db"`
 	DbSsl          bool   `long:"db-ssl" description:"Enable TLS / SSL encrypted connection to the database. (mysql/postgres only)" value-name:"false"`
+	DbFlush        bool   `long:"db-flush" description:"Flush all data from the database and start fresh"`
 	DbSkipVerify   bool   `long:"db-skip-verify" description:"Allow Self-signed or invalid certificate (mysql/postgres only)" value-name:"false"`
 	DatabaseOutput bool   `long:"db-verbose" description:"Show database logs in STDOUT"`
 
@@ -147,8 +148,6 @@ func CLIRun(f func(options *Options)) {
 			}
 
 			options.DbHost = options.DbHost + options.DbPort + ")"
-		} else {
-			options.DbHost = "127.0.0.1"
 		}
 
 	} else if options.Postgres {

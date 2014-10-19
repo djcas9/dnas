@@ -105,6 +105,7 @@ func Monitor(options *Options) {
 	queue := make(chan *Question)
 
 	if options.Mysql || options.Postgres || options.Sqlite3 {
+
 		db, err = DatabaseConnect(options)
 
 		if err != nil {
@@ -125,9 +126,13 @@ func Monitor(options *Options) {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for _ = range c {
-			db.Close()
 			file.Close()
 			close(queue)
+
+			if options.Mysql || options.Postgres || options.Sqlite3 {
+				db.Close()
+			}
+
 			os.Exit(1)
 		}
 	}()

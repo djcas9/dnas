@@ -45,6 +45,8 @@ type Question struct {
 	CreatedAt int64    `json:"created_at"`
 	UpdatedAt int64    `json:"updated_at"`
 	Packet    string   `json:"packet" sql:"-"`
+	Type      uint16   `json:"question_type"`
+	Class     uint16   `json:"question_class"`
 }
 
 type Client struct {
@@ -105,6 +107,8 @@ func DNS(pkt *pcap.Packet, options *Options) (*Question, error) {
 
 	for i := range msg.Question {
 		message.Question = msg.Question[i].Name
+		message.Type = msg.Question[i].Qtype
+		message.Class = msg.Question[i].Qclass
 	}
 
 	for i := range msg.Answer {
