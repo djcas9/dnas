@@ -102,7 +102,6 @@ func DNS(pkt *pcap.Packet, options *Options) (*Question, error) {
 
 		message.SrcIp = ip6hdr.SrcAddr()
 		message.DstIp = ip6hdr.DestAddr()
-		fmt.Println(ip6hdr)
 	}
 
 	for i := range msg.Question {
