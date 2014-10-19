@@ -22,6 +22,7 @@ const (
 type Answer struct {
 	Id         int64
 	QuestionId int64
+	ClientId   int64
 	Class      string    `json:"class"`
 	Name       string    `json:"name"`
 	Record     string    `json:"record"`
@@ -35,6 +36,7 @@ type Answer struct {
 type Question struct {
 	Id        int64
 	SeenCount int64
+	ClientId  int64
 	Answers   []Answer `json:"answers"`
 	Question  string   `json:"question"`
 	Length    int      `json:"length" sql:"-"`
@@ -46,8 +48,16 @@ type Question struct {
 	Packet    string   `json:"packet" sql:"-"`
 }
 
+type Client struct {
+	Id        int64
+	LastSeen  int64
+	Hostname  string `json:"hostname"`
+	Interface string `json:"interface"`
+	MacAddr   string `json:"mac_addr"`
+}
+
 // DNS process and parse DNS packets
-func DNS(pkt *pcap.Packet) (*Question, error) {
+func DNS(pkt *pcap.Packet, options *Options) (*Question, error) {
 	message := &Question{}
 
 	pkt.Decode()
@@ -99,11 +109,12 @@ func DNS(pkt *pcap.Packet) (*Question, error) {
 	for i := range msg.Answer {
 		split := strings.Split(msg.Answer[i].String(), "\t")
 		answer := Answer{
-			Name:   split[0],
-			Ttl:    split[1],
-			Class:  split[2],
-			Record: split[3],
-			Data:   split[4],
+			Name:     split[0],
+			Ttl:      split[1],
+			Class:    split[2],
+			Record:   split[3],
+			Data:     split[4],
+			ClientId: options.Client.Id,
 		}
 
 		message.Answers = append(message.Answers, answer)

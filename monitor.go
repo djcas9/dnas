@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"runtime"
+	"strings"
 
 	"github.com/growse/pcap"
 	"github.com/jinzhu/gorm"
@@ -43,18 +43,31 @@ func WriteToFile(fo *os.File, json []byte) {
 // handle the various output methods.
 func Monitor(options *Options) {
 
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	if !options.Quiet {
-		fmt.Printf("\n %s (%s) - %s\n",
+		fmt.Printf("\n %s (%s) - %s\n\n",
 			Name,
 			Version,
 			Description,
 		)
 
-		hostname, _ := os.Hostname()
+		fmt.Printf(" Hostname: %s\n", options.Hostname)
 
-		fmt.Printf(" Host: %s\n\n", hostname)
+		fmt.Printf(" Interface: %s (%s)\n",
+			options.InterfaceData.Name, options.InterfaceData.HardwareAddr.String())
+
+		addrs, err := options.InterfaceData.Addrs()
+
+		if err == nil {
+			var list []string
+
+			for _, addr := range addrs {
+				list = append(list, addr.String())
+			}
+
+			fmt.Printf(" Addresses: %s\n\n", strings.Join(list, ", "))
+		} else {
+			fmt.Printf("\n")
+		}
 	}
 
 	expr := fmt.Sprintf("port %d", options.Port)
@@ -85,20 +98,18 @@ func Monitor(options *Options) {
 		}()
 	}
 
-	if options.User != "" {
-		chuser(options.User)
-	}
-
 	var db gorm.DB
+	var clientId int64 = 0
 
 	if options.Mysql {
 		db, err = DatabaseConnect(options)
 
 		if err != nil {
-
-			fmt.Println(err.Error())
-			panic(err)
+			fmt.Println(" Error: ", err.Error(), "\n")
+			os.Exit(1)
 		}
+
+		clientId = CreateClient(db, options)
 	}
 
 	queue := make(chan *Question)
@@ -120,13 +131,17 @@ func Monitor(options *Options) {
 		}
 	}()
 
+	if options.User != "" {
+		chuser(options.User)
+	}
+
 	for pkt, r := h.NextEx(); r >= 0; pkt, r = h.NextEx() {
 
 		if r == 0 {
 			continue
 		}
 
-		message, err := DNS(pkt)
+		message, err := DNS(pkt, options)
 
 		if err == nil {
 
@@ -135,7 +150,8 @@ func Monitor(options *Options) {
 					json, err := message.ToJSON()
 
 					if err != nil {
-						panic(err)
+						fmt.Println(err.Error())
+						os.Exit(-1)
 					}
 
 					WriteToFile(file, json)
@@ -144,6 +160,7 @@ func Monitor(options *Options) {
 
 			if options.Mysql {
 				// go message.ToDatabase(db, options)
+				message.ClientId = clientId
 				queue <- message
 			}
 

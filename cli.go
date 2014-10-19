@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
+	"runtime"
 
 	"code.google.com/p/gopass"
 
@@ -70,6 +72,11 @@ type Options struct {
 
 	Quiet   bool `short:"q" long:"quiet" description:"Suppress DNAS output"`
 	Version bool `short:"v" long:"version" description:"Show version information"`
+
+	// Other
+	InterfaceData *net.Interface
+	Hostname      string
+	Client        *Client
 }
 
 func printUsage(p *flags.Parser) {
@@ -97,9 +104,13 @@ func printVersion() {
 // CLIRun start DNAS and process all command-line options
 func CLIRun(f func(options *Options)) {
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	options := &Options{}
 
 	var parser = flags.NewParser(options, flags.Default)
+
+	options.Hostname, _ = os.Hostname()
 
 	if _, err := parser.Parse(); err != nil {
 		printUsage(parser)
@@ -144,6 +155,16 @@ func CLIRun(f func(options *Options)) {
 
 	if options.Interface == "" {
 		printUsage(parser)
+	} else {
+
+		iface, err := net.InterfaceByName(options.Interface)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+
+		options.InterfaceData = iface
 	}
 
 	if options.Daemon {

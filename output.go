@@ -66,8 +66,10 @@ func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 	db.DB().SetMaxIdleConns(10)
 	db.DB().SetMaxOpenConns(100)
 
-	// db.DropTableIfExists(&Question{})
-	// db.DropTableIfExists(&Answer{})
+	// keep commented - debug only
+	db.DropTableIfExists(&Question{})
+	db.DropTableIfExists(&Answer{})
+	db.DropTableIfExists(&Client{})
 
 	if !db.HasTable(&Question{}) {
 		db.CreateTable(&Question{})
@@ -77,9 +79,44 @@ func DatabaseConnect(options *Options) (db gorm.DB, err error) {
 		db.CreateTable(&Answer{})
 	}
 
+	if !db.HasTable(&Client{}) {
+		db.CreateTable(&Client{})
+	}
+
 	db.AutoMigrate(&Question{}, &Answer{})
 
 	return db, nil
+}
+
+func CreateClient(db gorm.DB, options *Options) (id int64) {
+
+	var c Client
+
+	db.Where(
+		&Client{
+			Hostname:  options.Hostname,
+			Interface: options.Interface,
+			MacAddr:   options.InterfaceData.HardwareAddr.String(),
+		},
+	).First(&c)
+
+	if c.Id != 0 {
+		db.Model(&c).Update(
+			&Client{
+				LastSeen: time.Now().Unix(),
+			},
+		)
+	} else {
+		c.LastSeen = time.Now().Unix()
+		c.Hostname = options.Hostname
+		c.MacAddr = options.InterfaceData.HardwareAddr.String()
+		c.Interface = options.Interface
+		db.Table("clients").Create(&c)
+	}
+
+	options.Client = &c
+
+	return c.Id
 }
 
 func prettyPrint(message *Question, count int) {
