@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 
 	"github.com/growse/pcap"
 	"github.com/jinzhu/gorm"
@@ -55,19 +54,21 @@ func Monitor(options *Options) {
 		fmt.Printf(" Interface: %s (%s)\n",
 			options.InterfaceData.Name, options.InterfaceData.HardwareAddr.String())
 
-		addrs, err := options.InterfaceData.Addrs()
+		fmt.Printf(" IP Address: %s\n", options.Ip)
 
-		if err == nil {
-			var list []string
+		// addrs, err := options.InterfaceData.Addrs()
 
-			for _, addr := range addrs {
-				list = append(list, addr.String())
-			}
+		// if err == nil {
+		// var list []string
 
-			fmt.Printf(" Addresses: %s\n\n", strings.Join(list, ", "))
-		} else {
-			fmt.Printf("\n")
-		}
+		// for _, addr := range addrs {
+		// list = append(list, addr.String())
+		// }
+
+		// fmt.Printf(" Addresses: %s\n\n", strings.Join(list, ", "))
+		// } else {
+		// fmt.Printf("\n")
+		// }
 	}
 
 	expr := fmt.Sprintf("port %d", options.Port)
@@ -101,7 +102,9 @@ func Monitor(options *Options) {
 	var db gorm.DB
 	var clientId int64 = 0
 
-	if options.Mysql {
+	queue := make(chan *Question)
+
+	if options.Mysql || options.Postgres || options.Sqlite3 {
 		db, err = DatabaseConnect(options)
 
 		if err != nil {
@@ -110,15 +113,13 @@ func Monitor(options *Options) {
 		}
 
 		clientId = CreateClient(db, options)
+
+		go func() {
+			for elem := range queue {
+				elem.ToDatabase(db, options)
+			}
+		}()
 	}
-
-	queue := make(chan *Question)
-
-	go func() {
-		for elem := range queue {
-			elem.ToDatabase(db, options)
-		}
-	}()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -158,8 +159,7 @@ func Monitor(options *Options) {
 				}()
 			}
 
-			if options.Mysql {
-				// go message.ToDatabase(db, options)
+			if options.Mysql || options.Postgres || options.Sqlite3 {
 				message.ClientId = clientId
 				queue <- message
 			}

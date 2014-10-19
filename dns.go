@@ -48,11 +48,13 @@ type Question struct {
 }
 
 type Client struct {
-	Id        int64
-	LastSeen  int64
-	Hostname  string `json:"hostname"`
-	Interface string `json:"interface"`
-	MacAddr   string `json:"mac_addr"`
+	Id            int64
+	LastSeen      int64
+	QuestionCount int64  `json:"question_count"`
+	Hostname      string `json:"hostname"`
+	Interface     string `json:"interface"`
+	MacAddr       string `json:"mac_addr"`
+	Ip            string `json:"ip"`
 }
 
 // DNS process and parse DNS packets

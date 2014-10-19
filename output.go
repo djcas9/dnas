@@ -27,22 +27,53 @@ var (
 )
 
 func DatabaseConnect(options *Options) (db gorm.DB, err error) {
-
 	var connect string
+	var dbType string
 
-	connect = options.DbUser + ":" +
-		options.DbPassword + "@" + options.DbHost + "/" +
-		options.DbDatabase
+	if options.Mysql {
 
-	if options.DbTls {
-		if options.DbSkipVerify {
-			connect = connect + "?tls=skip-verify"
-		} else {
-			connect = connect + "?tls=true"
+		dbType = "mysql"
+
+		connect = options.DbUser + ":" +
+			options.DbPassword + "@" + options.DbHost + "/" +
+			options.DbDatabase
+
+		if options.DbSsl {
+			if options.DbSkipVerify {
+				connect = connect + "?tls=skip-verify"
+			} else {
+				connect = connect + "?tls=true"
+			}
 		}
+
 	}
 
-	db, err = gorm.Open("mysql", connect)
+	if options.Postgres {
+
+		dbType = "postgres"
+
+		connect = fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s",
+			options.DbUser, options.DbDatabase, options.DbPassword, options.DbHost, options.DbPort,
+		)
+
+		if options.DbSsl {
+			if options.DbSkipVerify {
+				connect = connect + " sslmode=require"
+			} else {
+				connect = connect + " sslmode=verify-full"
+			}
+		} else {
+			connect = connect + " sslmode=disable"
+		}
+
+	}
+
+	if options.Sqlite3 {
+		dbType = "sqlite3"
+		connect = options.DbPath
+	}
+
+	db, err = gorm.Open(dbType, connect)
 
 	if err != nil {
 		return db, err
@@ -97,6 +128,7 @@ func CreateClient(db gorm.DB, options *Options) (id int64) {
 			Hostname:  options.Hostname,
 			Interface: options.Interface,
 			MacAddr:   options.InterfaceData.HardwareAddr.String(),
+			Ip:        options.Ip,
 		},
 	).First(&c)
 
@@ -111,6 +143,7 @@ func CreateClient(db gorm.DB, options *Options) (id int64) {
 		c.Hostname = options.Hostname
 		c.MacAddr = options.InterfaceData.HardwareAddr.String()
 		c.Interface = options.Interface
+		c.Ip = options.Ip
 		db.Table("clients").Create(&c)
 	}
 
@@ -128,7 +161,7 @@ func prettyPrint(message *Question, count int) {
 	fmt.Printf("\033[0;32;49mAnswers (%d):\033[0m\n\n", len(message.Answers))
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"RR", "Name", "Data", "Last Seen"})
+	table.SetHeader([]string{"RR", "Name", "Data", "Timestamp"})
 	// table.SetBorder(false)
 
 	for _, aa := range message.Answers {
@@ -137,7 +170,7 @@ func prettyPrint(message *Question, count int) {
 			aa.Record,
 			aa.Name,
 			lime + aa.Data + reset,
-			aa.UpdatedAt.Format(layout),
+			aa.CreatedAt.Format(layout),
 		})
 	}
 
@@ -169,9 +202,20 @@ func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
 		id = q.Id
 
 	} else {
+		options.Client.QuestionCount = options.Client.QuestionCount + 1
+
+		db.Exec("UPDATE clients SET question_count=? WHERE id=?",
+			options.Client.QuestionCount, options.Client.Id)
+
+		var time int64 = time.Now().Unix()
+
 		question.SeenCount = 1
-		question.CreatedAt = time.Now().Unix()
+
+		question.CreatedAt = time
+		question.UpdatedAt = time
+
 		db.Table("questions").Create(question)
+
 		id = question.Id
 	}
 
@@ -179,6 +223,7 @@ func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
 		a.ClientId = options.Client.Id
 		a.QuestionId = id
 		a.CreatedAt = time.Now()
+
 		db.Table("answers").Create(a)
 	}
 

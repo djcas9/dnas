@@ -65,8 +65,8 @@ type Options struct {
 	DbDatabase     string `long:"db-database" description:"Database Database" value-name:"dnas"`
 	DbHost         string `long:"db-host" description:"Database Host" value-name:"127.0.0.1"`
 	DbPort         string `long:"db-port" description:"Database Port" value-name:"3306"`
-	DbPath         string `long:"db-path" description:"Path to Database on disk. (sqlite3 only)" value-name:"~/.dnas.db"`
-	DbTls          bool   `long:"db-tls" description:"Enable TLS / SSL encrypted connection to the database. (mysql/postgres only)" value-name:"false"`
+	DbPath         string `long:"db-path" description:"Path to Database on disk. (sqlite3 only)" default:"./dnas.db"`
+	DbSsl          bool   `long:"db-ssl" description:"Enable TLS / SSL encrypted connection to the database. (mysql/postgres only)" value-name:"false"`
 	DbSkipVerify   bool   `long:"db-skip-verify" description:"Allow Self-signed or invalid certificate (mysql/postgres only)" value-name:"false"`
 	DatabaseOutput bool   `long:"db-verbose" description:"Show database logs in STDOUT"`
 
@@ -76,6 +76,7 @@ type Options struct {
 	// Other
 	InterfaceData *net.Interface
 	Hostname      string
+	Ip            string
 	Client        *Client
 }
 
@@ -112,6 +113,16 @@ func CLIRun(f func(options *Options)) {
 
 	options.Hostname, _ = os.Hostname()
 
+	addrs, _ := net.InterfaceAddrs()
+
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				options.Ip = ipnet.IP.String()
+			}
+		}
+	}
+
 	if _, err := parser.Parse(); err != nil {
 		printUsage(parser)
 	}
@@ -121,6 +132,42 @@ func CLIRun(f func(options *Options)) {
 	}
 
 	if options.Mysql {
+
+		if options.Postgres || options.Sqlite3 {
+			fmt.Println("DNAS Error: Only one database output plugin can be selected.")
+			os.Exit(1)
+		}
+
+		if options.DbHost != "" {
+
+			options.DbHost = "tcp(" + options.DbHost + ":"
+
+			if options.DbPort == "" {
+				options.DbPort = "3306"
+			}
+
+			options.DbHost = options.DbHost + options.DbPort + ")"
+		} else {
+			options.DbHost = "127.0.0.1"
+		}
+
+	} else if options.Postgres {
+
+		if options.Sqlite3 {
+			fmt.Println("DNAS Error: Only one database output plugin can be selected.")
+			os.Exit(1)
+		}
+
+		if options.DbPort == "" {
+			options.DbPort = "5432"
+		}
+
+		if options.DbHost == "" {
+			options.DbHost = "127.0.0.1"
+		}
+	}
+
+	if options.Mysql || options.Postgres {
 		if options.DbPassword == "" {
 			password, err := gopass.GetPass("Database Password: ")
 
@@ -132,17 +179,6 @@ func CLIRun(f func(options *Options)) {
 		} else if options.DbPassword == "none" {
 			options.DbPassword = ""
 		}
-	}
-
-	if options.DbHost != "" {
-
-		options.DbHost = "tcp(" + options.DbHost + ":"
-
-		if options.DbPort == "" {
-			options.DbPort = "3306"
-		}
-
-		options.DbHost = options.DbHost + options.DbPort + ")"
 	}
 
 	if options.DbUser == "" {
