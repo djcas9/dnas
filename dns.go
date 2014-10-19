@@ -29,7 +29,6 @@ type Answer struct {
 	Data       string    `json:"data"`
 	Ttl        string    `json:"ttl"`
 	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // Message is used to pass and process data for various output options
@@ -37,7 +36,7 @@ type Question struct {
 	Id        int64
 	SeenCount int64
 	ClientId  int64
-	Answers   []Answer `json:"answers"`
+	Answers   []Answer `json:"answers" sql:"-"`
 	Question  string   `json:"question"`
 	Length    int      `json:"length" sql:"-"`
 	DstIp     string   `json:"dstip"`

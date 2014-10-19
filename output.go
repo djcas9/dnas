@@ -147,6 +147,7 @@ func prettyPrint(message *Question, count int) {
 
 func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
 	var q Question
+	var id int64 = 0
 
 	db.Where(
 		&Question{
@@ -165,10 +166,20 @@ func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
 			},
 		)
 
+		id = q.Id
+
 	} else {
 		question.SeenCount = 1
 		question.CreatedAt = time.Now().Unix()
 		db.Table("questions").Create(question)
+		id = question.Id
+	}
+
+	for _, a := range question.Answers {
+		a.ClientId = options.Client.Id
+		a.QuestionId = id
+		a.CreatedAt = time.Now()
+		db.Table("answers").Create(a)
 	}
 
 	return nil
