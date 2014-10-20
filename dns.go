@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudflare/dns"
 	"github.com/growse/pcap"
-	"github.com/miekg/dns"
 )
 
 const (
