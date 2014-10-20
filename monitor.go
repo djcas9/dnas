@@ -133,15 +133,17 @@ func Monitor(options *Options) {
 			}
 		}()
 
-		for _ = range c {
-			file.Close()
-			close(queue)
+		for sig := range c {
+			if sig.String() == "interrupt" {
+				file.Close()
+				close(queue)
 
-			if options.Mysql || options.Postgres || options.Sqlite3 {
-				db.Close()
+				if options.Mysql || options.Postgres || options.Sqlite3 {
+					db.Close()
+				}
+
+				os.Exit(1)
 			}
-
-			os.Exit(1)
 		}
 	}()
 
