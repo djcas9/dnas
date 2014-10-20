@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudflare/dns"
 	"github.com/growse/pcap"
+	"github.com/mephux/dns"
 )
 
 const (
@@ -64,7 +64,7 @@ func DNS(pkt *pcap.Packet, options *Options) (*Question, error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered:", r)
+			fmt.Println("DNS Decode - Recovered:", r)
 			fmt.Println("Please report this issue. https://github.com/mephux/dnas")
 		}
 	}()
