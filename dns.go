@@ -61,6 +61,14 @@ type Client struct {
 
 // DNS process and parse DNS packets
 func DNS(pkt *pcap.Packet, options *Options) (*Question, error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered:", r)
+			fmt.Println("Please report this issue. https://github.com/mephux/dnas")
+		}
+	}()
+
 	message := &Question{}
 
 	pkt.Decode()

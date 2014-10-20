@@ -147,6 +147,7 @@ func CreateClient(db gorm.DB, options *Options) (id int64) {
 		c.MacAddr = options.InterfaceData.HardwareAddr.String()
 		c.Interface = options.Interface
 		c.Ip = options.Ip
+
 		db.Table("clients").Create(&c)
 	}
 

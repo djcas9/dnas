@@ -125,6 +125,14 @@ func Monitor(options *Options) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
+
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Recovered:", r)
+				fmt.Println("Please report this issue. https://github.com/mephux/dnas")
+			}
+		}()
+
 		for _ = range c {
 			file.Close()
 			close(queue)
@@ -140,6 +148,13 @@ func Monitor(options *Options) {
 	if options.User != "" {
 		chuser(options.User)
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered:", r)
+			fmt.Println("Please report this issue. https://github.com/mephux/dnas")
+		}
+	}()
 
 	for pkt, r := h.NextEx(); r >= 0; pkt, r = h.NextEx() {
 
