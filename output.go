@@ -156,8 +156,8 @@ func CreateClient(db gorm.DB, options *Options) (id int64) {
 	return c.Id
 }
 
-func msToTime(ms int64) (time.Time, error) {
-	return time.Unix(0, ms*int64(time.Millisecond)), nil
+func msToTime(ms int64) time.Time {
+	return time.Unix(0, ms*int64(time.Millisecond))
 }
 
 func prettyPrint(message *Question, count int) {
@@ -178,12 +178,22 @@ func prettyPrint(message *Question, count int) {
 			aa.Record,
 			aa.Name,
 			lime + aa.Data + reset,
-			aa.CreatedAt.Format(layout),
+			msToTime(aa.CreatedAt).Format(layout),
 		})
 	}
 
 	table.Render()
 	fmt.Printf("\n")
+}
+
+func contains(m Answer, list []Answer) int {
+	for i, b := range list {
+		if b.Record == m.Record && b.Name == m.Name && b.Data == m.Data {
+			return i
+		}
+	}
+
+	return -1
 }
 
 func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
@@ -227,13 +237,59 @@ func (question *Question) ToDatabase(db gorm.DB, options *Options) (err error) {
 		id = question.Id
 	}
 
-	for _, a := range question.Answers {
-		a.ClientId = options.Client.Id
-		a.QuestionId = id
-		a.CreatedAt = time.Now()
+	go func() {
 
-		db.Table("answers").Create(a)
-	}
+		for _, a := range question.Answers {
+
+			var aa Answer
+
+			db.Table("answers").Where(
+				&Answer{
+					Name:       a.Name,
+					Data:       a.Data,
+					Record:     a.Record,
+					Class:      a.Class,
+					QuestionId: id,
+					ClientId:   options.Client.Id,
+				},
+			).First(&aa)
+
+			if aa.Id != 0 {
+				db.Model(&aa).Update(
+					&Answer{
+						SeenCount: aa.SeenCount + 1,
+						Active:    true,
+					},
+				)
+			} else {
+
+				a.ClientId = options.Client.Id
+				a.QuestionId = id
+				a.SeenCount = 1
+				a.Active = true
+
+				db.Table("answers").Create(a)
+			}
+		}
+
+		var olda []Answer
+
+		db.Where(&Answer{
+			QuestionId: id,
+			ClientId:   options.Client.Id,
+		}).Find(&olda)
+
+		for _, a := range olda {
+			index := contains(a, question.Answers)
+
+			if index == -1 {
+				a.Active = false
+				a.UpdatedAt = time.Now().Unix()
+				db.Save(&a)
+			}
+		}
+
+	}()
 
 	return nil
 }

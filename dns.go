@@ -23,12 +23,15 @@ type Answer struct {
 	Id         int64
 	QuestionId int64
 	ClientId   int64
-	Class      string    `json:"class"`
-	Name       string    `json:"name"`
-	Record     string    `json:"record"`
-	Data       string    `json:"data"`
-	Ttl        string    `json:"ttl"`
-	CreatedAt  time.Time `json:"created_at"`
+	Class      string `json:"class"`
+	Name       string `json:"name"`
+	Record     string `json:"record"`
+	Data       string `json:"data"`
+	Ttl        string `json:"ttl"`
+	CreatedAt  int64  `json:"created_at"`
+	UpdatedAt  int64  `json:"updated_at"`
+	Active     bool   `json:"active"`
+	SeenCount  int64
 }
 
 // Message is used to pass and process data for various output options
@@ -127,7 +130,8 @@ func DNS(pkt *pcap.Packet, options *Options) (*Question, error) {
 			Record:    split[3],
 			Data:      split[4],
 			ClientId:  options.Client.Id,
-			CreatedAt: time.Now(),
+			CreatedAt: time.Now().Unix(),
+			UpdatedAt: time.Now().Unix(),
 		}
 
 		message.Answers = append(message.Answers, answer)
