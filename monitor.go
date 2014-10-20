@@ -128,7 +128,7 @@ func Monitor(options *Options) {
 
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("Recovered:", r)
+				fmt.Println("DB Queue - Recovered:", r)
 				fmt.Println("Please report this issue. https://github.com/mephux/dnas")
 			}
 		}()
@@ -151,7 +151,7 @@ func Monitor(options *Options) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered:", r)
+			fmt.Println("Monitor - Recovered:", r)
 			fmt.Println("Please report this issue. https://github.com/mephux/dnas")
 		}
 	}()
